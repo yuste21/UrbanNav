@@ -10,7 +10,7 @@ import path from 'path'
 
 
 /*
-SER                 = 32.112
+SER                 = 32.111
 Reducida            = 11.983
 Motos               = 1.312
 Carga y Descarga    = 2.820
@@ -48,19 +48,20 @@ export const leerCSV_ser = async(req, res) => {
     try {
         //Leemos csv de los estacionamientos SER
         // Lectura del csv desde la web
-        /*
+        
         const urlCSV = 'https://datos.madrid.es/egob/catalogo/218228-16-SER-calles.csv'
         const response = await axios.get(urlCSV, { responseType: 'stream' })
 
         response.data.pipe(csvParser({ separator: ';' }))
-        */
+        
+        //---------------------------------------------------------------------------------------
        // Ruta al archivo CSV en tu directorio local
-       const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Estacionamiento(SER)/estacionamiento.csv';
+       //const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Estacionamiento(SER)/estacionamiento.csv';
 
        // Leer el archivo CSV localmente
-       const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+       //const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+       //fileStream.pipe(csvParser({ separator: ';' }))
 
-       fileStream.pipe(csvParser({ separator: ';' }))
             .on('data', async (row) => {
                 console.log(row)
 
@@ -154,8 +155,8 @@ export const leerCSV_ser = async(req, res) => {
                 
             })
             .on('end', () => {
-                console.log('Procesamiento del CSV de estacionamientos completo.');
-                res.json('Estacionamientos creados correctamente')
+                console.log('Procesamiento del CSV de estacionamientos SER completo.');
+                res.json('Estacionamientos SER creados correctamente')
             })
 
             
@@ -188,19 +189,20 @@ export const leerCSV_reducida = async(req, res) => {
     try {
         //Leemos csv de los estacionamientos Movilidad reducida
         // Lectura del csv desde la web
-        /*
+        
         const urlCSV2 = 'https://datos.madrid.es/egob/catalogo/208083-1-estacionamiento-pmr.csv'
         const response2 = await axios.get(urlCSV2, { responseType: 'stream' })
 
         response2.data.pipe(csvParser({ separator: ';' }))
-        */
+
+        //---------------------------------------------------------------------------------------
         // Ruta al archivo CSV en tu directorio local
-        const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Estacionamiento movilidad reducida/estacionamiento_movilidad_reducida.csv';
+        //const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Estacionamiento movilidad reducida/estacionamiento_movilidad_reducida.csv';
 
         // Leer el archivo CSV localmente
-        const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+        //const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+        //fileStream.pipe(csvParser({ separator: ';' }))
 
-        fileStream.pipe(csvParser({ separator: ';' }))
             .on('data', async (row) => {
                 console.log(row)                
                 
@@ -346,8 +348,8 @@ export const leerCSV_reducida = async(req, res) => {
                 
             })
             .on('end', () => {
-                console.log('Procesamiento del CSV de estacionamientos completo.');
-                res.json('Estacionamientos creados correctamente')
+                console.log('Procesamiento del CSV de estacionamientos MOVILIDAD REDUCIDA completo.');
+                res.json('Estacionamientos MOVILIDAD REDUCIDA creados correctamente')
             })
     } catch (error) {
         console.error('Error al leerCSV de los estacionamientos MOVILIDAD REDUCIDA:', error.message);
@@ -380,20 +382,20 @@ export const leerCSV_motos = async(req, res) => {
     try {
         //Leemos csv de los estacionamientos MOTOS
         // Lectura del csv desde la web
-        /*
+        
         const urlCSV3 = 'https://datos.madrid.es/egob/catalogo/205062-5-reservas-moto.csv'
         const response3 = await axios.get(urlCSV3, { responseType: 'stream' })
 
         response3.data.pipe(csvParser({ separator: ';' }))
-        */
-
+        
+        //---------------------------------------------------------------------------------------
         // Ruta al archivo CSV en tu directorio local
-        const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Reservas moto/reservas_moto.csv';
+        //const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Reservas moto/reservas_moto.csv';
 
         // Leer el archivo CSV localmente
-        const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+        //const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+        //fileStream.pipe(csvParser({ separator: ';' }))
 
-        fileStream.pipe(csvParser({ separator: ';' }))
             .on('data', async (row) => {
                 console.log(row)                
                 
@@ -556,8 +558,8 @@ export const leerCSV_motos = async(req, res) => {
                 
             })
             .on('end', () => {
-                console.log('Procesamiento del CSV de estacionamientos completo.');
-                res.json('Estacionamientos de motos creados correctamente')
+                console.log('Procesamiento del CSV de estacionamientos MOTOS completo.');
+                res.json('Estacionamientos MOTOS creados correctamente')
             })
     } catch (error) {
         console.error('Error al leerCSV de los estacionamientos MOTOS:', error.message);
@@ -587,22 +589,22 @@ export const leerCSV_motos = async(req, res) => {
 */
 export const leerCSV_carga = async(req, res) => {
     try {
-        //Leemos csv de los estacionamientos SER
+        //Leemos csv de los estacionamientos de carga
         // Lectura del csv desde la web
-        /*
+        
         const urlCSV4 = 'https://datos.madrid.es/egob/catalogo/208072-16-carga-descarga.csv'
-        const response4 = await axios.get(urlCSV3, { responseType: 'stream' })
+        const response4 = await axios.get(urlCSV4, { responseType: 'stream' })
 
         response4.data.pipe(csvParser({ separator: ';' }))
-        */
-
+        
+        //---------------------------------------------------------------------------------------
         // Ruta al archivo CSV en tu directorio local
-        const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Carga_descarga_2023.csv';
+        //const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Carga_descarga_2023.csv';
 
         // Leer el archivo CSV localmente
-        const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+        //const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+        //fileStream.pipe(csvParser({ separator: ';' }))
 
-        fileStream.pipe(csvParser({ separator: ';' }))
             .on('data', async (row) => {
                 var tipo
                 if(row['Línea / Batería'] === '') {
@@ -750,8 +752,8 @@ export const leerCSV_carga = async(req, res) => {
                 
             })
             .on('end', () => {
-                console.log('Procesamiento del CSV de estacionamientos completo.');
-                res.json('Estacionamientos creados correctamente')
+                console.log('Procesamiento del CSV de estacionamientos CARGA y DESCARGA completo.');
+                res.json('Estacionamientos CARGA y DESCARGA creados correctamente')
             })
     } catch (error) {
         console.error('Error al leerCSV de los estacionamientos CARGA y DESCARGA:', error.message);
@@ -768,7 +770,17 @@ export const zonas = async(req, res) => {
         //Inicializamos la lista de agrupaciones (similar a los accidentes)
         const limite1 = [40.56698051912112, -3.8418246248843606]
         const limite2 = [40.31509361515658, -3.5218478307903602]
-        const limite = 0.015     //Las zonas estan delimitadas por este maximo de diferencia en lat y lon
+
+        var limite  //Las zonas estan delimitadas por este maximo de diferencia en lat y lon
+        if(estacionamientos.length > 5000) {
+            limite = 0.005
+            console.log('Nº estacionamientos = ' + estacionamientos.length)
+        } else if(estacionamientos.length > 2500) {
+            limite = 0.01
+        } else {
+            limite = 0.05
+        }
+        
         var agrupaciones_aux = []
         var actual = [40.56698051912112, -3.8418246248843606]
 
@@ -818,6 +830,8 @@ export const zonas = async(req, res) => {
             }
         }
         
+        console.log('Nº zonas = ' + agrupaciones.length)
+
         res.json(agrupaciones)
     } catch (error) {
         console.error('Error en la consulta zonas: ', error)

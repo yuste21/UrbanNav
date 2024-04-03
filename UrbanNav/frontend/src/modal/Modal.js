@@ -1,6 +1,6 @@
-import "../Modal.css"
+import "./Modal.css"
 
-const ModalAccidente = ({children, isOpen, closeModal}) => {
+const Modal = ({children, isOpen, closeModal}) => {
     const handleContainerClick = (e) => e.stopPropagation()
 
     return(
@@ -13,4 +13,4 @@ const ModalAccidente = ({children, isOpen, closeModal}) => {
     )
 }
 
-export default ModalAccidente
+export default Modal

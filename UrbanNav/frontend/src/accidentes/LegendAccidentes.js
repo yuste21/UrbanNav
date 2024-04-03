@@ -1,9 +1,6 @@
 import React from 'react';
-import ModalAccidente from './ModalAccidentes';
-import { useModal } from './useModalAccidente';
 
-
-const LegendAccidentes = ({ zonaSelected }) => {
+const LegendAccidentes = ({ zonaSelected, riesgoMedio }) => {
     //Hacer modal en Leyenda para que la explique un poco | Que es el balance 
     //const [isOpenModal, openModal, closeModal] = useModal(false)
 
@@ -11,23 +8,24 @@ const LegendAccidentes = ({ zonaSelected }) => {
         <div className='legend'>
             <h4>Leyenda</h4>
             <div className='info legend'>
-                <div>
-                    <i style={{ background: 'blue' }}></i> Balance menor de 50
+                <h3>Riesgo medio: {Math.round(riesgoMedio)}</h3>
+                <div className='mb-2'>
+                    <i style={{ background: '#2A81CB' }}></i> Riesgo bajo
                 </div>
-                <div>
-                    <i style={{ background: 'yellow' }}></i> Balance entre 50 y 150
+                <div className='mb-2'>
+                    <i style={{ background: '#FFD326' }}></i> Riesgo medio
                 </div>
-                <div>
-                    <i style={{ background: 'orange' }}></i> Balance entre 150 y 250
+                <div className='mb-2'>
+                    <i style={{ background: '#CB8427' }}></i> Riesgo alto
                 </div>
-                <div>
-                    <i style={{ background: 'red' }}></i> Balance mayor de 250
+                <div className='mb-2'>
+                    <i style={{ background: '#CB2B3E' }}></i> Riesgo muy alto
                 </div>
                 {zonaSelected && (
                     <div className='mt-2'>
                         <p>Lesividad Media: {Math.round(zonaSelected.lesividad)} </p>
-                        <p>Total Accidentes: {zonaSelected.accidentes} </p>
-                        <p>Balance: {Math.round(zonaSelected.balance)} </p>
+                        <p>Total Accidentes: {zonaSelected.num_accidentes} </p>
+                        <p>Riesgo: {Math.round(zonaSelected.riesgo)} </p>
                     </div>
                 )}
             </div>

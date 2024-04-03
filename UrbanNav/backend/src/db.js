@@ -4,10 +4,10 @@ const db = new Sequelize('urban_nav', 'root', 'alvaro21112002', {
     host: 'localhost',
     dialect: 'mysql',
     dialectOptions: {
-        connectTimeout: 120000, // 60 segundos (ajusta este valor según tus necesidades)
+        connectTimeout: 480000, // 8 minutos de espera 
     },
     pool: {
-        max: 150, // Ajusta este valor según tus necesidades
+        max: 50, // Numero máximo de conexiones simultaneas a la bd
     }
 })
 

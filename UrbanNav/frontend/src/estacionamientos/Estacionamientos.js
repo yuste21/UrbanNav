@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import axios from 'axios'
 import Loader from "../loader/Loader";
 
-function EstacionamientosBloque () {
+function Estacionamientos () {
     const [estacionamientos, setEstacionamientos] = useState({})
     const [filtro, setFiltro] = useState({})
     const [loading, setLoading] = useState(false)
@@ -30,7 +30,6 @@ function EstacionamientosBloque () {
     const handleFilter = async (data) => {
         let res 
         setFiltro(data)
-        console.log('LLEGO')
         setLoading(true)
 
         if(Object.keys(data).length !== 0) {
@@ -111,4 +110,4 @@ function EstacionamientosBloque () {
     )
 }
 
-export default EstacionamientosBloque
+export default Estacionamientos

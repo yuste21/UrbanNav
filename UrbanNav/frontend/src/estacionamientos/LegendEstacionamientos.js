@@ -4,6 +4,9 @@ const LegendEstacionamientos = () => {
             <h4>Leyenda</h4>
             <div className="info legend">
                 <div className="mb-2">
+                    <p>Tipo de estacionamiento (color)</p>
+                </div>
+                <div className="mb-2">
                     <i style={{backgroundColor: '#2AAD27'}}></i>Residencial
                 </div>
                 <div className="mb-2">

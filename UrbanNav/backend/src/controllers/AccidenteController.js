@@ -2,7 +2,7 @@ import AccidenteModel from "../models/AccidenteModel.js";
 import axios from 'axios' 
 import proj4 from 'proj4'   //Convertir coordenadas UTM en geograficas
 import csvParser from 'csv-parser'  //Leer archivo csv
-import { Sequelize, Op, fn, col } from 'sequelize'
+import { Sequelize, Op } from 'sequelize'
 
 //Para leer desde el directorio local
 import fs from 'fs'
@@ -17,6 +17,7 @@ export const getAllAccidentes = async(req, res) => {
     try {
         const accidentes = await AccidenteModel.findAll()
 
+        console.log(accidentes.length)
         res.json(accidentes)
     } catch (error) {
         console.log('Error en la consulta getAllAccidentes: ', error)
@@ -24,14 +25,30 @@ export const getAllAccidentes = async(req, res) => {
     }
 }
 
-export const getZonas = async(req, res) => {
+/**
+ * agrupaciones = [
+ *      { zona: array de 4 posiciones donde cada una representa una esquina de la zona en coordenadas,
+ *        lesividad: lesividad media,
+ *        num_accidentes: total de accidentes dentro de la zona seleccionada,
+ *        riesgo: total de accidentes * lesividad media -> En base a esto asociamos el color del peligro de la zona,
+ *        
+ *      }
+ * ]
+ */
+
+/*export const getZonas = async(req, res) => {
     try {
-        const accidentes = await AccidenteModel.findAll()
+
+        var accidentes
+        accidentes = req.body
+        if(accidentes.length === 0) {
+            accidentes = await AccidenteModel.findAll()
+        }
 
         //Inicializamos la lista de agrupaciones
         const limite1 = [40.56698051912112, -3.8418246248843606]
         const limite2 = [40.31509361515658, -3.5218478307903602]
-        const limite = 0.02     //Las zonas estan delimitadas por este maximo de diferencia en lat y lon
+        const limite = 0.01     //Las zonas estan delimitadas por este maximo de diferencia en lat y lon
         var agrupaciones_aux = []
         var actual = [40.56698051912112, -3.8418246248843606]
 
@@ -39,7 +56,7 @@ export const getZonas = async(req, res) => {
             while(actual[1] < limite2[1]) {
                 agrupaciones_aux.push({zona:[[actual[0], actual[1]], [actual[0] + limite, actual[1]], 
                                         [actual[0] + limite, actual[1] + limite], [actual[0], actual[1] + limite]], 
-                                        lesividad: 0, accidentes: 0, balance: 0}) 
+                                        lesividad: 0, num_accidentes: 0, riesgo: 0, accidentes: []}) 
                 actual[1] += limite 
             }
             actual[1] = limite1[1]
@@ -80,25 +97,154 @@ export const getZonas = async(req, res) => {
                         lesion = 1
                     }
                 
-                    agrupacion.lesividad = (agrupacion.lesividad * agrupacion.accidentes + lesion)/(agrupacion.accidentes+1)
-                    agrupacion.accidentes++
+                    agrupacion.lesividad = (agrupacion.lesividad * agrupacion.num_accidentes + lesion)/(agrupacion.num_accidentes+1)
+                    agrupacion.num_accidentes++
+                    agrupacion.accidentes.push(accidente)
                 }
             })
         })
+
+        
         //Sacamos de la lista de agrupacion las zonas que no tienen ningun accidente
+        //y calculamos el riesgo medio
         
         var agrupaciones = []
+        var riesgoMedio = 0
+        var i = 0
         for(let i = 0; i < agrupaciones_aux.length; i++) {
-            if(agrupaciones_aux[i].accidentes !== 0) {
-                agrupaciones_aux[i].balance = agrupaciones_aux[i].accidentes * agrupaciones_aux[i].lesividad
+            if(agrupaciones_aux[i].num_accidentes !== 0) {
+                agrupaciones_aux[i].riesgo = agrupaciones_aux[i].num_accidentes * agrupaciones_aux[i].lesividad
+                //agrupaciones_aux[i].riesgo = parseFloat((agrupaciones_aux[i].num_accidentes * agrupaciones_aux[i].lesividad).toFixed(2))
                 agrupaciones.push(agrupaciones_aux[i])
+                riesgoMedio = (riesgoMedio * i + agrupaciones_aux[i].riesgo) / (i+1)
+                i++
             }
         }
-        
-        res.json(agrupaciones)
+
+        res.json({ agrupaciones, riesgoMedio })
     } catch (error) {
         console.log('Error en la consulta getZonas: ', error)
         res.status(500).json({ message: 'Error al obtener getZonas' })
+    }
+}*/
+
+export const getZonas = async(req, res) => {
+    try {
+
+        var accidentes
+        accidentes = req.body
+        if(accidentes.length === 0) {
+            accidentes = await AccidenteModel.findAll()
+        }
+
+        //Inicializamos la lista de agrupaciones
+        const limite1 = [40.56698051912112, -3.8418246248843606]
+        const limite2 = [40.31509361515658, -3.5218478307903602]
+        const limite = 0.02     //Las zonas estan delimitadas por este maximo de diferencia en lat y lon
+        var agrupaciones_aux = []
+        var actual = [40.56698051912112, -3.8418246248843606]
+
+        while(actual[0] > limite2[0]) {
+            while(actual[1] < limite2[1]) {
+                agrupaciones_aux.push({zona:[[actual[0], actual[1]], [actual[0] + limite, actual[1]], 
+                                        [actual[0] + limite, actual[1] + limite], [actual[0], actual[1] + limite]], 
+                                        lesividad: 0, num_accidentes: 0, riesgo: 0}) 
+                actual[1] += limite 
+            }
+            actual[1] = limite1[1]
+            actual[0] -= limite
+        }
+        
+        //Rellenamos la lista de agrupaciones calculando la media de lesion de cada zona
+        var diferencia_x
+        var diferencia_y
+        var dentro
+        var i
+        accidentes.map((accidente) => {
+            agrupaciones_aux.map((agrupacion) => {
+                dentro = true
+                i = 0
+                while(dentro && i < agrupacion.zona.length) {
+                    diferencia_x = Math.abs(agrupacion.zona[i][0] - accidente.lat)
+                    diferencia_y = Math.abs(agrupacion.zona[i][1] - accidente.lon)
+                    if(diferencia_x > limite || diferencia_y > limite) {
+                        dentro = false
+                    }
+                    i++
+                }
+
+                //Hemos encontrado la zona correspondiente al accidente
+                if(dentro) {   
+                    var lesion
+                    //Calculamos la gravedad de la lesion y la añadimos a la media
+                    if(accidente.lesividad === 1 || accidente.lesividad === 2 || accidente.lesividad === 5 || 
+                        accidente.lesividad === 6 || accidente.lesividad === 7) {
+
+                        lesion = 2
+                    } else if(accidente.lesividad === 3) {
+                        lesion = 3
+                    } else if(accidente.lesividad === 4) {
+                        lesion = 5
+                    } else {
+                        lesion = 1
+                    }
+                
+                    agrupacion.lesividad = (agrupacion.lesividad * agrupacion.num_accidentes + lesion)/(agrupacion.num_accidentes+1)
+                    agrupacion.num_accidentes++
+                }
+            })
+        })
+
+        //Sacamos de la lista de agrupacion las zonas que no tienen ningun accidente
+        //y calculamos el riesgo medio
+        var agrupaciones = []
+        var riesgoMedio = 0
+        for(let i = 0; i < agrupaciones_aux.length; i++) {
+            if(agrupaciones_aux[i].num_accidentes !== 0) {
+                agrupaciones_aux[i].riesgo = parseFloat((agrupaciones_aux[i].num_accidentes * agrupaciones_aux[i].lesividad).toFixed(2))
+                agrupaciones.push(agrupaciones_aux[i])
+                riesgoMedio += agrupaciones_aux[i].riesgo
+            }
+        }
+
+        riesgoMedio = riesgoMedio / agrupaciones.length
+
+        res.json({ agrupaciones, riesgoMedio })
+    } catch (error) {
+        console.log('Error en la consulta getZonas: ', error)
+        res.status(500).json({ message: 'Error al obtener getZonas' })
+    }
+}
+
+export const getZona_concreta = async(req, res) => {
+    try {
+        const { accidentes, zona } = req.body
+
+        var accidentes_dentro = []
+        var dentro, i, diferencia_x, diferencia_y
+        const limite = 0.02     //El mismo limite que en el metodo getZonas ya que este delimita el tamaño de la zona
+        accidentes.map((accidente) => {
+            dentro = true
+            i = 0
+            while(dentro && i < zona.length) {
+                diferencia_x = Math.abs(zona[i][0] - accidente.lat)
+                diferencia_y = Math.abs(zona[i][1] - accidente.lon)
+                if(diferencia_x > limite || diferencia_y > limite) {
+                    dentro = false
+                }
+                i++
+            }
+
+            if(dentro) {
+                accidentes_dentro.push(accidente)
+            }
+        })
+
+
+        res.json(accidentes_dentro)
+    } catch (error) {
+        console.log('Error en la consulta getZona_concreta: ', error)
+        res.status(500).json({ message: 'Error al obtener getZona_concreta' })
     }
 }
 
@@ -130,28 +276,29 @@ export const getZonas = async(req, res) => {
 //No llega a insertar 10.000 filas
 export const leerCSV_coches = async (req, res) => {
     try {
+        let batchCount = 0; // Contador de lotes
+        const batchSize = 50; // Tamaño del lote
+
         //Leemos csv de los accidentes coche 
         // Lectura del csv desde la web
-        /*
+        
         const urlCSV = 'https://datos.madrid.es/egob/catalogo/300228-26-accidentes-trafico-detalle.csv'
         const response = await axios.get(urlCSV, { responseType: 'stream' })
 
         //Parsear el contenido del CSV y procesar cada fila
         response.data.pipe(csvParser({ separator: ';' }))
-        */
-       // Ruta al archivo CSV en tu directorio local
-       const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/2023_Accidentalidad.csv';
+        
+        //----------------------------------------------------------------------------------------------
+        // Ruta al archivo CSV en tu directorio local
+        //const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/2023_Accidentalidad.csv';
 
-       // Leer el archivo CSV localmente
-       const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+        // Leer el archivo CSV localmente
+        //const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+       //fileStream.pipe(csvParser({ separator: ';' }))
 
-       let batchCount = 0; // Contador de lotes
-       const batchSize = 100; // Tamaño del lote
-
-       fileStream.pipe(csvParser({ separator: ';' }))
             .on('data', async (row) => {
                 // Procesar cada fila del CSV
-                console.log(row)
+                //console.log(row)
                 
                 var edad
                 if(row.rango_edad.includes('Más de') || row.rango_edad.includes('Menor de')) {
@@ -195,23 +342,26 @@ export const leerCSV_coches = async (req, res) => {
                     clima = row['estado_meteorológico']
                 }
 
-                await AccidenteModel.create({
-                    'fecha': nuevaFecha,
-                    'hora': row.hora,
-                    'localizacion': row.localizacion,
-                    'distrito': row.distrito,
-                    'accidente': row.tipo_accidente,
-                    'clima': clima,
-                    'vehiculo': row.tipo_vehiculo,
-                    'persona': row.tipo_persona,
-                    'sexo': row.sexo,
-                    'lesividad': lesividad,
-                    'edad': edad,
-                    'lat': latitude,
-                    'lon': longitude,
-                    'alcohol': alcohol,
-                    'drogas': drogas 
-                })
+                if(latitude !== -1 && longitude !== -1) {
+                    
+                    await AccidenteModel.create({
+                        'fecha': nuevaFecha,
+                        'hora': row.hora,
+                        'localizacion': row.localizacion,
+                        'distrito': row.distrito,
+                        'accidente': row.tipo_accidente,
+                        'clima': clima,
+                        'vehiculo': row.tipo_vehiculo,
+                        'persona': row.tipo_persona,
+                        'sexo': row.sexo,
+                        'lesividad': lesividad,
+                        'edad': edad,
+                        'lat': latitude,
+                        'lon': longitude,
+                        'alcohol': alcohol,
+                        'drogas': drogas 
+                    })
+                }
                 
                 // Incrementar el contador de lotes
                 batchCount++;
@@ -371,7 +521,7 @@ export const buscarFechaConcreta = async (req, res) => {
         const accidentes = await AccidenteModel.findAll({
             where: { fecha: fecha }
         })
-
+        console.log(fecha)
         res.json(accidentes)
 
     } catch (error) {
@@ -704,6 +854,43 @@ export const buscarPorClima = async(req, res) => {
         res.status(500).json({ message: 'Error en la consulta buscarPorClima' })
     }
 }
+
+//BUSCAR POR RADIO DE PROXIMIDAD
+export const buscarPorRadio = async(req, res) => {
+    try {
+        const { radio, lat, lon } = req.query
+
+        const allAccidentes = await AccidenteModel.findAll()
+        let accidentesFiltrados = allAccidentes.filter(accidente => calcularDistancia(accidente.lat, accidente.lon, lat, lon) <= radio)
+        
+        console.log(accidentesFiltrados.length)
+        res.json(accidentesFiltrados)
+
+    } catch (error) {
+        console.log('Error en la consulta buscarPorRadio: ', error)
+        res.status(500).json({ message: 'Error en la consulta buscarPorRadio' })
+    }
+}
+
+// Función para calcular la distancia entre dos puntos geográficos en kilómetros
+function calcularDistancia(lat1, lon1, lat2, lon2) {
+    const radioTierra = 6371; // Radio de la Tierra en kilómetros
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distancia = radioTierra * c;
+    return distancia;
+}
+
+// Función auxiliar para convertir grados a radianes
+function toRadians(grados) {
+    return grados * Math.PI / 180;
+}
+
 //--------------------------------------------------------------------------
 //FECHA + 1
 //BUSCAR POR FECHA Y HORA
@@ -922,6 +1109,8 @@ export const buscarPorFechaClima = async(req, res) => {
     try {
         const { fecha, clima } = req.query
 
+        console.log('Clima = ' + clima)
+
         const accidentes = await AccidenteModel.findAll({
             where: {
                 fecha: fecha,
@@ -930,6 +1119,8 @@ export const buscarPorFechaClima = async(req, res) => {
                 }
             }
         })
+
+        console.log(JSON.stringify(accidentes))
 
         res.json(accidentes)
     } catch (error) {
@@ -1465,10 +1656,13 @@ export function UTMtoGPS(x, y) {
     // Definir la proyección UTM correspondiente
     proj4.defs('EPSG:326' + 30, '+proj=utm +zone=30 +ellps=WGS84 +datum=WGS84 +units=m +no_defs');
 
-    // Convertir coordenadas UTM a latitud y longitud
-    const [longitude, latitude] = proj4('EPSG:326' + 30, 'EPSG:4326', [x, y]);
+    if(isFinite(x) && isFinite(y)) {
+        // Convertir coordenadas UTM a latitud y longitud
+        const [longitude, latitude] = proj4('EPSG:326' + 30, 'EPSG:4326', [x, y]);
 
-    console.log('UTM to GPS lat / lon = ' + latitude + ' / ' + longitude)
-
-    return { latitude, longitude }
+        //console.log('UTM to GPS lat / lon = ' + latitude + ' / ' + longitude)
+        return { latitude, longitude }
+    } else {
+        return { latitude: 1, longitude: -1}
+    }
 }

@@ -1,9 +1,10 @@
 import express from 'express'
-import { getAllAccidentes, getZonas, leerCSV_coches, leerCSV_bicis,
+import { getAllAccidentes, getZonas, getZona_concreta, leerCSV_coches, leerCSV_bicis,
 
         //Filtro individual
-        buscarFechaConcreta, buscarEntreFechas, buscarPorHora, buscarEntreHoras, buscarPorEdad, buscarPorVehiculo, 
-        buscarPorDistrito, buscarPorDrogas, buscarPorAlcohol, buscarPorLesionGravedad, buscarPorSexo, buscarPorAccidente, buscarPorClima, 
+        buscarFechaConcreta, buscarEntreFechas, buscarPorHora, buscarEntreHoras, buscarPorEdad, 
+        buscarPorVehiculo, buscarPorDistrito, buscarPorDrogas, buscarPorAlcohol, buscarPorLesionGravedad, 
+        buscarPorSexo, buscarPorAccidente, buscarPorClima, buscarPorRadio, 
 
         //Fecha+   
         buscarPorFechaAccidente, buscarPorFechaAlcohol, buscarPorFechaClima, buscarPorFechaDistrito, buscarPorFechaDrogas, 
@@ -30,7 +31,8 @@ routerAccidente.post('/bicis', leerCSV_bicis)
 
 //Filtro 1 + getZonas + getAll
 routerAccidente.get('/', getAllAccidentes)
-routerAccidente.get('/zonas', getZonas)
+routerAccidente.post('/zonas', getZonas)
+routerAccidente.post('/zona', getZona_concreta)
 routerAccidente.get('/fecha/concreta', buscarFechaConcreta)
 routerAccidente.get('/fecha/entre', buscarEntreFechas)
 //routerAccidente.get('/fecha/mes', buscarPorMes)
@@ -45,6 +47,7 @@ routerAccidente.get('/lesion/gravedad', buscarPorLesionGravedad)
 routerAccidente.get('/sexo', buscarPorSexo)
 routerAccidente.get('/accidente', buscarPorAccidente)
 routerAccidente.get('/clima', buscarPorClima)
+routerAccidente.get('/radio', buscarPorRadio)
 
 //Filtro Fecha+
 routerAccidente.get('/fecha/hora', buscarPorFechaHora)

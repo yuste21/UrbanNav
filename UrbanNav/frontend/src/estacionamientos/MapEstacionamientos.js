@@ -60,13 +60,13 @@ const MapEstacionamientos = ({ estacionamientos, setEstacionamientos, zonas, set
                                 <Popup>
                                     <button className="btn"
                                             onClick={() => {
-                                            setEstacionamientosPrev(estacionamientos)
-                                            setEstacionamientos(zona.estacionamientos) 
-                                            setFiltro({
-                                                ...filtro,
-                                                zonas: 1
-                                            })
-                                        }}
+                                                setEstacionamientosPrev(estacionamientos)
+                                                setEstacionamientos(zona.estacionamientos) 
+                                                setFiltro({
+                                                    ...filtro,
+                                                    zonas: 1
+                                                })
+                                            }}
                                     >Ver estacionamientos de esta zona</button>
                                 </Popup>
                             </Polygon>

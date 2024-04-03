@@ -16,6 +16,8 @@ export const URIsAccidentes = {
     fecha_concreta: `${baseURI}/fecha/concreta`,
     fecha_entre: `${baseURI}/fecha/entre`,
     hora_entre: `${baseURI}/hora/entre`,
+    radio: `${baseURI}/radio`,
+    zona_concreta: `${baseURI}/zona`,
 
     //Fecha+
     fecha_hora: `${baseURI}/fecha/hora`,

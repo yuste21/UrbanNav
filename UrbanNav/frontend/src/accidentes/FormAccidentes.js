@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "./useFormAccidentes.js"
 
 const initialForm = {
@@ -15,19 +15,29 @@ const initialForm = {
     lesion: '',
     sexo: '',
     accidente: '',
-    clima: '' 
+    clima: '',
+    radio: {
+        activo: false,
+        distancia: 0,
+        lat: 0,
+        lon: 0
+    },
+    zona: []
 }
 
-const FormAccidentes = ({ handleFilter }) => {
+
+const FormAccidentes = ({ handleFilter, markerPosition, filtro }) => {
     const [showForm, setShowForm] = useState(false)
 
     const { 
         form,
+        setForm,
         errors,
         response,
         handleChange,
         handleSubmit,
-        vaciarFiltro } = useForm(initialForm, handleFilter)
+        vaciarFiltro } = useForm(initialForm, handleFilter, filtro)
+
 
     return(
         <div className='card'>
@@ -41,7 +51,32 @@ const FormAccidentes = ({ handleFilter }) => {
                     {showForm ? 'Ocultar filtro' : 'Mostrar filtro'}
                 </button>
                 {showForm &&
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={(event) => handleSubmit(event, markerPosition)}>
+                        <div className="d-flex align-items-center">
+                            {!form.radio.activo ? 
+                                <button className="btn btn-secondary mb-4" 
+                                        type="button" 
+                                        name="activo"
+                                        onClick={handleChange} 
+                                >Mostrar marcador arrastrable</button>
+                            :
+                            <>
+                                <label className='fw-bold me-2 mb-4' htmlFor="radio">Selecciona un radio en km</label>
+                                <input className="mb-4 me-2"
+                                       type="number"
+                                       value={form.radio.distancia}
+                                       id="radio"
+                                       name="distancia"
+                                       onChange={handleChange}
+                                />
+                                <button className="btn btn-secondary mb-4"
+                                        type="button"
+                                        name="inactivo"
+                                        onClick={handleChange}
+                                >Ocultar marcador arrastrable</button>
+                            </>
+                            }
+                        </div>
                         <div className='d-flex align-items-center'>
                             <label className='fw-bold me-2 mb-4' htmlFor="sexo">Sexo</label>
                             <select className='mb-4 me-4 form-select' 

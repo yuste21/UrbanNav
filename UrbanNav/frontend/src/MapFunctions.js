@@ -1,5 +1,6 @@
 import { useCallback, useState, useMemo, useRef } from "react"
 import { useMap, Marker, Popup } from "react-leaflet"
+import { iconos } from "./markerIcons"
 
 export const center = [40.41688189428294, -3.703318510771146]
 export const zoom = 11
@@ -28,7 +29,7 @@ export function DisplayPosition({ map }) {
   )
 }
 
-export function DraggableMarker() {
+export function DraggableMarker({ markerPosition, setMarkerPosition }) {
   const [draggable, setDraggable] = useState(false)
   const [position, setPosition] = useState(center)
   const markerRef = useRef(null)
@@ -37,11 +38,15 @@ export function DraggableMarker() {
       dragend() {
         const marker = markerRef.current
         if (marker != null) {
-          setPosition(marker.getLatLng())
+          const newPosition = marker.getLatLng()
+          const newPositionArray = [newPosition.lat, newPosition.lng]
+          setPosition(newPosition)
+          setMarkerPosition(newPositionArray)
+          console.log('Posicion: ' + position + ' ' + markerPosition + ' ' + newPosition)
         }
       },
     }),
-    [],
+    [setMarkerPosition],
   )
   const toggleDraggable = useCallback(() => {
     setDraggable((d) => !d)
@@ -52,6 +57,7 @@ export function DraggableMarker() {
       draggable={draggable}
       eventHandlers={eventHandlers}
       position={position}
+      icon={iconos.rojo}
       ref={markerRef}>
       <Popup minWidth={90}>
         <span onClick={toggleDraggable}>
