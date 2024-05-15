@@ -24,7 +24,7 @@ export function DisplayPosition({ map }) {
 
   return (
     <p>
-      <button className="btn btn-secondary" onClick={onClick}>Centrar Mapa</button>
+      <button className="btn btn-genius" onClick={onClick}>Centrar Mapa</button>
     </p>
   )
 }

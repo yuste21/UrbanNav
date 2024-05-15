@@ -1,8 +1,11 @@
-import TraficoModel from "../models/TraficoModel.js";
+import { TraficoModel, OrientacionModel } from '../models/TraficoModel.js'
 import axios from 'axios' 
 import proj4 from 'proj4'   //Convertir coordenadas UTM en geograficas
 import csvParser from 'csv-parser'  //Leer archivo csv
 import { Sequelize, Op, fn, col } from 'sequelize'
+import { BarrioModel, DistritoModel } from '../models/DistritoModel.js'
+import { calcularPuntoMedio } from './DistritoController.js'
+import moment from 'moment'
 
 //Para leer desde el directorio local
 import fs from 'fs'
@@ -10,6 +13,8 @@ import path from 'path'
 
 
 import { startOfMonth, endOfMonth, endOfISOWeekYear } from 'date-fns'
+import { encontrarZona } from './DistritoController.js'
+import EstacionamientoModel from '../models/EstacionamientoModel.js'
 
 /**
  * Este metodo devuelve una lista de objetos en la que cada elemento es una estación con los siguientes atributos:
@@ -19,69 +24,222 @@ import { startOfMonth, endOfMonth, endOfISOWeekYear } from 'date-fns'
  * - muestras --> total de muestras tomadas (una muestra es media jornada de un dia, 12 horas)
  * - media --> división del total entre las muestras
  */
-function getEstaciones(trafico) {
-    var estaciones = []
 
-    trafico.forEach(data => {
-        var encontrado = estaciones.find(estacion => estacion.estacion === data.estacion)
-        var aforo = data.hor1 + data.hor2 + data.hor3 + data.hor4 + data.hor5 + data.hor6 + data.hor7 + data.hor8 + data.hor9 + data.hor10 + data.hor11 + data.hor12
-        if(encontrado === undefined) {
-            estaciones.push({ 
-                estacion: data.estacion, 
-                nombre: data.nombre, 
-                media: aforo, 
-                total: aforo, 
-                muestras: 1, 
-                lat: data.lat, 
-                lon: data.lon,
-                sentido: data.orient
-            })
-        } else {
-            encontrado.media = (encontrado.media * encontrado.muestras + aforo) / (encontrado.muestras+1) 
-            encontrado.media = parseFloat(encontrado.media.toFixed(2))
-            encontrado.muestras++
-            encontrado.total += aforo
-        }
-    })
+export const getOrientacion = async(req, res) => {
+    try {
+        const orientacion = await OrientacionModel.findAll()
 
-    var media = 0
-    var i = 0
-    estaciones.forEach(estacion => {
-        media = (media * i + estacion.media) / (i+1)
-        i++
-    })
-    media = parseFloat(media.toFixed(2))
-
-    var inferior = 0
-    var superior = 0
-    estaciones.forEach(estacion => {
-        if(estacion.media < media) {
-            inferior++
-        } else {
-            superior++
-        }
-    })
-
-    console.log('Inferior: ' + inferior + ' | Superior: ' + superior)
-
-    return({ estaciones, media })
+        res.json(orientacion)
+    } catch (error) {
+        console.log('Error en la consulta getOrientacion', error.message)
+        res.status(500).json({ error: 'Error en la consulta getOrientacion'})
+    }
 }
 
+/**
+ * En este metodo uso la funcion getEstaciones creada en TraficoController
+ * Y calculo el aforo de cada estacion (media, total y muestras) y lo almaceno en los barrios y los distritos 
+ * Para hacer menos costoso el metodo en getTraficoInicio llamare a traficoAux con orientacion = false y asi juntar los sentidos
+ */
+export async function traficoAux(traficoId, orientacion, horaMin, horaMax) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const distritos_bd = await DistritoModel.findAll({
+                include: [{
+                    model: BarrioModel,
+                    as: 'barrios',
+                    required: true,
+                    include: [{
+                        model: TraficoModel,
+                        as: 'aforos',
+                        where: {
+                            id: {
+                                [Op.in]: traficoId
+                            }
+                        },
+                        required: true,
+                        include: [{
+                            model: OrientacionModel,
+                            as: 'orientacione'
+                        }]
+                    }]
+                }]
+            })
+
+            var estaciones_trafico = []
+            var distritos = []
+            var barrios = []
+            var inicio = 0
+            var fin = 0
+            var media_total = 0
+            distritos_bd.forEach((distrito) => {
+                var media_distrito = 0
+                distrito.barrios.forEach((barrio) => {
+                    const { estaciones, media } = getEstaciones(barrio.aforos, orientacion, horaMin, horaMax)
+                    estaciones_trafico = estaciones_trafico.concat(estaciones)
+                    var centro = calcularPuntoMedio(barrio.delimitaciones)
+                    barrios.push({
+                        id: barrio.id,
+                        nombre: barrio.nombre,
+                        delimitaciones: barrio.delimitaciones,
+                        estaciones: estaciones,
+                        media: parseFloat(media.toFixed(0)),
+                        centro: centro
+                    })
+                    media_total += media
+                    media_distrito += media
+                    fin++
+                })
+                media_distrito = media_distrito / distrito.barrios.length
+                media_distrito = parseFloat(media_distrito.toFixed(0))
+                var centro = calcularPuntoMedio(distrito.delimitaciones)
+                distritos.push({
+                    codigo: distrito.codigo,
+                    nombre: distrito.nombre,
+                    delimitaciones: distrito.delimitaciones,
+                    barrios: barrios.slice(inicio, fin),
+                    media: media_distrito,
+                    centro: centro
+                })
+                inicio = fin
+            })
+        
+            //En total son 59 muestras
+            media_total = media_total / 59
+        
+            media_total = parseFloat(media_total.toFixed(0))
+        
+            var distritos_ordenados = distritos.sort((a, b) => b.media - a.media)
+            var barrios_ordenados = barrios.sort((a, b) => b.media - a.media)
+            var estaciones_ordenadas = estaciones_trafico.sort((a, b) => b.media - a.media)
+            
+            resolve({ distritos: distritos_ordenados, barrios: barrios_ordenados, estaciones_trafico: estaciones_ordenadas, media_total })
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
+/**
+ * Este metodo junta el trafico de ambos sentidos de la estacion o lo separa en 
+ * funcion del valor del parametro orientacion.
+ * estructura de estaciones:
+ * estaciones = {
+ *      estacion: nº de la estacion
+ *      nombre: nombre de la estacion
+ *      media: trafico medio de la estacion | media = total / muestras 
+ *      total: total del trafico
+ *      muestras: nº de dias que se han hecho las mediciones
+ *      lat | lon: coordenadas de la estacion
+ *      sentido: orientacion individual: Norte-Sur, Sur-Norte, Este-Oeste u Oeste-Este | ambas orientaciones: Norte + Sur o Este + Oeste 
+ * } 
+ */
+export function getEstaciones(trafico, orientacion, horaMin, horaMax) {
+    try {
+        var estaciones = []
+
+        trafico.forEach(data => {
+            var sentido
+            if(orientacion === 'true') {    //Separo las orientaciones
+                var encontrado = estaciones.find(estacion => estacion.estacion === data.estacion && 
+                                                estacion.sentido === data.orientacione.orientacion)
+                sentido = data.orientacione.orientacion
+
+            } else {
+                var encontrado = estaciones.find(estacion => estacion.estacion === data.estacion)
+                sentido = data.orientacione.orientacion.split('-')[0] + ' + ' + data.orientacione.orientacion.split('-')[1]
+            }
+            var aforo = 0
+            if(horaMax === null && horaMin === null) {
+                aforo = data.trafico.reduce((total, traficoActual) => total + traficoActual, 0)
+            } else if(horaMax === null) {   //Hora concreta
+                aforo = data.trafico[(horaMin-1)]
+            } else {    //Entre horas
+                for(let i = (horaMin-1); i < horaMax; i++) {
+                    aforo += data.trafico[i]
+                }
+            }
+            
+            if(encontrado === undefined) {
+                estaciones.push({ 
+                    estacion: data.estacion, 
+                    nombre: data.nombre, 
+                    media: aforo, 
+                    total: aforo, 
+                    muestras: 1, 
+                    lat: data.lat, 
+                    lon: data.lon,
+                    sentido: sentido
+                })
+            } else {
+                encontrado.media = (encontrado.media * encontrado.muestras + aforo) / (encontrado.muestras+1) 
+                encontrado.media = parseFloat(encontrado.media.toFixed(2))  //Redondeo la media a 2 decimales
+                encontrado.muestras++
+                encontrado.total += aforo
+            }
+        })
+
+        //Media general entre todas las estaciones
+        var media = 0
+        var i = 0
+        estaciones.forEach(estacion => {
+            media = (media * i + estacion.media) / (i+1)
+            i++
+        })
+        media = parseFloat(media.toFixed(2))
+
+        //inferior = estaciones cuyas medidas estan debajo de la media general
+        //superior = estaciones cuyas medidas estan encima de la media general
+        /*
+        var inferior = 0
+        var superior = 0
+        estaciones.forEach(estacion => {
+            if(estacion.media < media) {
+                inferior++
+            } else {
+                superior++
+            }
+        })
+
+        console.log('Inferior: ' + inferior + ' | Superior: ' + superior)
+        */
+        return({ estaciones, media })
+    } catch (error) {
+        console.log('Error: ' + error)
+    }
+}
+
+//Devuelve el trafico de cada estacion separamos los datos por el sentido dependiendo del query
 export const getAllTrafico = async(req, res) => {
     try {
-        const trafico = await TraficoModel.findAll()
-        
-        const { estaciones, media } = getEstaciones(trafico)
+        const { orientacion } = req.query
+        const trafico = await TraficoModel.findAll({})
 
-        console.log(trafico.length)
-        res.json({ estaciones, media })
+        const traficoId = trafico.map(el => el.id)
+        var fechaMin = trafico.reduce((min, el) => new Date(el.fecha) < min ? new Date(el.fecha) : min, new Date(trafico[0].fecha));
+        const añoMin = fechaMin.getFullYear();
+        const mesMin = fechaMin.getMonth() + 1; // getMonth() devuelve un índice basado en 0, por lo que se suma 1
+        const diaMin = fechaMin.getDate();
+        fechaMin = `${añoMin}-${mesMin.toString().padStart(2, '0')}-${diaMin.toString().padStart(2, '0')}`;
+        
+        var fechaMax = trafico.reduce((max, el) => new Date(el.fecha) > max ? new Date(el.fecha) : max, new Date(trafico[0].fecha));
+        const añoMax = fechaMax.getFullYear();
+        const mesMax = fechaMax.getMonth() + 1; // getMonth() devuelve un índice basado en 0, por lo que se suma 1
+        const diaMax = fechaMax.getDate();
+        fechaMax = `${añoMax}-${mesMax.toString().padStart(2, '0')}-${diaMax.toString().padStart(2, '0')}`;
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, null, null)
+
+        
+        res.json({ distritos, barrios, estaciones_trafico, media_total, fechaMin, fechaMax })
     } catch (error) {
         console.log('Error en la consulta getAllTrafico', error.message)
         res.status(500).json({ error: 'Error en la consulta getAllTrafico'})
     }
 }
 
-export const getChartFecha = async(req, res) => {
+
+export const getChartFechaEstacion = async(req, res) => {
     try {
         const { fecha1, fecha2, estacion } = req.query
         var fechaInicio
@@ -96,6 +254,7 @@ export const getChartFecha = async(req, res) => {
         }
 
         const trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
             where: {
                 fecha: {
                     [Op.between]: [fechaInicio, fechaFin]
@@ -104,6 +263,7 @@ export const getChartFecha = async(req, res) => {
             }
         })
 
+
         var trafico_ordenado = trafico.sort((a, b) => {
             const date1 = new Date(a.fecha)
             const date2 = new Date(b.fecha)
@@ -111,14 +271,18 @@ export const getChartFecha = async(req, res) => {
             return date1  - date2
         }) 
 
+        //En trafico_definitivo almaceno en cada posicion el trafico total regitrado el mismo dia
         var trafico_definitivo = []
         var nombre, num_estacion
         trafico_ordenado.forEach((el) => {
             var aux = trafico_ordenado.filter(ol => ol.fecha === el.fecha)
             var encontrado = trafico_definitivo.find(ol => ol.fecha === aux[0].fecha) 
             if(!encontrado) {
-                console.log('Encontrado = ' + JSON.stringify(aux))
-                var suma = aux.reduce((total, ol) => total + (ol.hor1 + ol.hor2 + ol.hor3 + ol.hor4 + ol.hor5 + ol.hor6 + ol.hor7 + ol.hor8 + ol.hor9 + ol.hor10 + ol.hor11 + ol.hor12), 0)
+                var suma = 0
+                aux.forEach((ol) => {
+                    var aforo = ol.trafico.reduce((total, traficoActual) => total + traficoActual, 0)
+                    suma += aforo
+                })                
                 
                 trafico_definitivo.push({
                     aforo: suma,
@@ -131,14 +295,14 @@ export const getChartFecha = async(req, res) => {
         num_estacion = estacion
         nombre = trafico_ordenado[0].nombre
 
-        res.json({ trafico: trafico_definitivo, num_estacion, nombre })
+        res.json({ trafico: trafico_definitivo, num_estacion, nombre, lat: trafico[0].lat, lon: trafico[0].lon })
     } catch (error) {
-        console.log('Error en la consulta getChartFecha', error.message)
-        res.status(500).json({ error: 'Error en la consulta getChartFecha'})
+        console.log('Error en la consulta getChartFechaEstacion', error.message)
+        res.status(500).json({ error: 'Error en la consulta getChartFechaEstacion'})
     }
 }
 
-export const getChatHora = async(req, res) => {
+export const getChartHoraEstacion = async(req, res) => {
     try {
         const { hora1, hora2, estacion } = req.query
 
@@ -154,50 +318,26 @@ export const getChatHora = async(req, res) => {
         var horaMax = new Date()
         horaMax.setHours(parseInt(max[0]), parseInt(max[1]), 0)
 
-        var limiteMañana = new Date()
-        limiteMañana.setHours(12, 0, 0)
-
         var trafico = []
 
-        if(horaMax <= limiteMañana && horaMin < horaMax) {
-            trafico = await TraficoModel.findAll({
-                where: {
-                    [Op.or]: [
-                        { fsen: '1-' },
-                        { fsen: '2-' }
-                    ],
-                    estacion: estacion
-                }
-            })
-        } else if(horaMin > limiteMañana && horaMin < horaMax ) {
-            trafico = await TraficoModel.findAll({
-                where: {
-                    [Op.or]: [
-                        { fsen: '1=' },
-                        { fsen: '2=' }
-                    ],
-                    estacion: estacion
-                }
-            })
-        } else {
-            trafico = await TraficoModel.findAll({
-                where: {
-                    estacion: estacion
-                }
-            })
-        }
+        trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
+            where: {
+                estacion: estacion
+            }
+        })
 
         horaMin = horaMin.getHours()
         horaMax = horaMax.getHours()
 
         var trafico_desordenado = []
-        /*  horaMin = 22:00
-            horaMax = 4:00
+        /*  horaMin = 23:00
+            horaMax = 3:00
         Tengo que crear un array con este formato:
         trafico_desordenado = [
+            {hora: 1:00, aforo: 100}
             {hora: 2:00, aforo: 200},
             {hora: 23:00, aforo: 400},
-            {hora: 1:00, aforo: 100}
         ]
 
         Y ordenarlo:
@@ -214,42 +354,8 @@ export const getChatHora = async(req, res) => {
                 "id": 2618,
                 "fecha": "2023-11-01",
                 "estacion": 1,
-                "fsen": "1-",
-                "orient": "S-N",
-                "hor1": 941,
-                "hor2": 745,
-                "hor3": 732,
-                "hor4": 624,
-                "hor5": 595,
-                "hor6": 544,
-                "hor7": 375,
-                "hor8": 388,
-                "hor9": 480,
-                "hor10": 640,
-                "hor11": 893,
-                "hor12": 1006,
-                "lat": 40.4319,
-                "lon": -3.68911,
-                "nombre": "Paseo de la Castellana"
-            },
-            {
-                "id": 2619,
-                "fecha": "2023-11-01",
-                "estacion": 1,
-                "fsen": "1=",
-                "orient": "S-N",
-                "hor1": 1294,
-                "hor2": 1230,
-                "hor3": 981,
-                "hor4": 1070,
-                "hor5": 1244,
-                "hor6": 1228,
-                "hor7": 1233,
-                "hor8": 1195,
-                "hor9": 932,
-                "hor10": 799,
-                "hor11": 639,
-                "hor12": 450,
+                "orientacione": "S-N",
+                "trafico": [1,2,3,4,...,24]
                 "lat": 40.4319,
                 "lon": -3.68911,
                 "nombre": "Paseo de la Castellana"
@@ -257,34 +363,22 @@ export const getChatHora = async(req, res) => {
         ]
         */
 
-        console.log(JSON.stringify(trafico))
-
-        //Al igual que en getTraficoEntreHoras obtengo el dataValues de cada objeto y compruebo la franja y hora        trafico.forEach(data => {
+        
         trafico.forEach(data => {
-            var dataValues = data.dataValues
             //Uso la variable i para iterar sobre los valores de las horas
             //Y juego con su valor y los string para crear las keys: '1:00', '2:00',...
-            var i
-            if(dataValues['fsen'].substring(1) === '-') {
-                i = 1
-            } else {
-                i = 13
-            }
-
-            for(const key in dataValues) {
-                var hora = parseInt(key.substring(3))
-                if(hora === (i % 12) || (hora === 12 && i === 24)) {    //Hemos llegado a los key de las horas
-                    if((horaMin < horaMax && horaMin <= i && i <= horaMax) || (horaMax < horaMin && (horaMin <= i || i <= horaMax))) {
-                        var encontrado = trafico_desordenado.find(el => el.hora === `${i}:00`)
-                        console.log(trafico_desordenado)
-                        if(encontrado === undefined) {
-                            trafico_desordenado.push({ hora: `${i}:00`, aforo: dataValues[key] })
-                        } else {
-                            var aux = trafico_desordenado.find(el => el.hora === `${i}:00`)
-                            aux.aforo += dataValues[key]
-                        }                                 
-                    } 
-                    i++ 
+            for(let i = 0; i < data.trafico.length; i++) {
+                if((horaMin < horaMax && horaMin <= (i+1) && (i+1) <= horaMax) || (horaMax < horaMin && (horaMin <= (i+1) || (i+1) <= horaMax))) {
+                    var hora = i+1
+                    if(hora < 10) {
+                        hora = `0${i+1}`
+                    }
+                    var encontrado = trafico_desordenado.find(el => el.hora === `${hora}:00`)
+                    if(encontrado) {
+                        encontrado.aforo += data.trafico[i]
+                    } else {
+                        trafico_desordenado.push({ hora: `${hora}:00`, aforo: data.trafico[i] })
+                    }
                 }
             }
         })
@@ -292,19 +386,316 @@ export const getChatHora = async(req, res) => {
         var num_estacion = estacion
         var nombre = trafico_desordenado[0].nombre
 
-        res.json({ trafico_desordenado, estacion: num_estacion, nombre: nombre })
+        //Recorro el array de manera circular inicializando el indice en la posicion de la horaMin
+        var trafico_ordenado = []
+        if(horaMin < 10) {
+            horaMin = `0${horaMin}`
+        }
+        var idx = trafico_desordenado.findIndex((el) => el.hora === `${horaMin}:00`);
+
+        for(let i = 0; i < trafico_desordenado.length; i++) {
+            trafico_ordenado[i] = trafico_desordenado[idx]
+            idx = (idx + 1) % trafico_desordenado.length
+        }
+
+        res.json({ trafico: trafico_ordenado, estacion: num_estacion, nombre, lat: trafico[0].lat, lon: trafico[0].lon })
     } catch (error) {
-        console.log('Error en la consulta getChatHora', error.message)
-        res.status(500).json({ error: 'Error en la consulta getChatHora'})
+        console.log('Error en la consulta getChartHoraEstacion', error.message)
+        res.status(500).json({ error: 'Error en la consulta getChartHoraEstacion'})
     }
 }
 
-/**
- * Metodo similar al anterior pero devuelve datos del trafico de un mes concreto de un año concreto
- */
+export const getChartFechaDistrito = async(req, res) => {
+    try {
+        const { fecha1, fecha2, codigo } = req.query
+        var fechaInicio
+        var fechaFin
+
+        if(fecha1 <= fecha2) {
+            fechaInicio = moment(fecha1, 'YYYY-MM-DD')
+            fechaFin = moment(fecha2, 'YYYY-MM-DD')
+        } else {
+            fechaInicio = moment(fecha2, 'YYYY-MM-DD')
+            fechaFin = moment(fecha1, 'YYYY-MM-DD')
+        }
+
+        const distritoBD = await DistritoModel.findAll({
+            where: {
+                codigo: codigo
+            },
+            required: true,
+            include: [{
+                    model: BarrioModel,
+                    as: 'barrios',
+                    required: true,
+                    include: [{
+                            model: TraficoModel,
+                            as: 'aforos',
+                            where: {
+                                fecha: {
+                                    [Op.between]: [fechaInicio, fechaFin]
+                                }
+                            },
+                            
+                        }]
+                }],
+        })
+        
+        /**
+         * CAMBIAR EL CODIGO DE aforos:
+         * CREAR UNA LISTA CON ESTA ESTRUCTURA:
+         * aforos = [
+         *      {
+         *          estacion: 2,
+         *          lat,
+         *          lon,
+         *          nombre,
+         *          trafico: [
+         *              {
+         *                  aforo: 100,
+         *                  fecha: 2023-11-11
+         *              },
+         *              {
+         *                  aforo: 78,
+         *                  fecha: 2023-11-12
+         *              }, ...
+         *              ] 
+         *      },
+         *      {
+         *          estacion: 3,
+         *          lat,
+         *          lon,
+         *          nombre,
+         *          trafico: [
+         *              {
+         *                  aforo: 45,
+         *                  fecha: 2023-11-11
+         *              },
+         *              {
+         *                  aforo: 150,
+         *                  fecha: 2023-11-12
+         *              },...
+         *              ]
+         *      },...
+         * ]
+         */
+
+        //En aforos almaceno los datos de cada estacion por separado
+        var aforos = []
+        distritoBD[0].barrios.forEach((barrio) => {
+            barrio.aforos.forEach((estacion) => {
+                var encontrado = aforos.find(el => el.estacion === estacion.estacion)
+                var aforo = estacion.trafico.reduce((total, traficoActual) => total + traficoActual, 0)
+                if(encontrado) {
+                    var encontrado2 = encontrado.trafico.find(el => el.fecha === estacion.fecha)
+                    if(encontrado2) {
+                        encontrado2.aforo += aforo
+                    } else {
+                        encontrado.trafico.push({
+                            aforo: aforo,
+                            fecha: estacion.fecha
+                        })
+                    }
+                } else {
+                    var trafico = []
+                    trafico.push({
+                        aforo: aforo,
+                        fecha: estacion.fecha
+                    })
+                    aforos.push({
+                        estacion: estacion.estacion,
+                        lat: estacion.lat,
+                        lon: estacion.lon,
+                        nombre: estacion.nombre,
+                        trafico: trafico
+                    })
+                }
+            })
+        })
+
+        var distrito = []
+        var diferenciaDias = fechaFin.diff(fechaInicio, 'days')
+        var fechaActual = moment(fechaInicio, 'YYYY-MM-DD')
+        for(let i = 0; i < (diferenciaDias + 1); i++) {
+            var fechaActual = moment(fechaInicio, 'YYYY-MM-DD')
+            fechaActual.add(i, 'days')
+            var aforoDistrito = 0
+            aforos.forEach((estacion) => {
+                var encontrado = estacion.trafico.find(el => fechaActual.isSame(el.fecha, 'day'))
+                if(encontrado) {
+                    aforoDistrito += encontrado.aforo
+                }
+            })
+            
+            distrito.push({
+                fecha: fechaActual.format('YYYY-MM-DD'),
+                aforo: aforoDistrito
+            })
+        }
+        //Los aforos de distrito ya estan ordenados por la fecha
+
+        //Ahora ordeno el trafico de los aforos
+        /*aforos.forEach((aforo) => {
+            aforo.trafico = aforo.trafico.sort((a, b) => {
+                var dateA = new Date(a.fecha)
+                var dateB = new Date(b.fecha)
+
+                return dateA - dateB
+            })
+        })*/
+
+        var centro = calcularPuntoMedio(distritoBD[0].delimitaciones)
+        res.json({ trafico: distrito, aforos, nombre: distritoBD[0].nombre, codigo: distritoBD[0].codigo, delimitaciones: distritoBD[0].delimitaciones, centro })
+    } catch (error) {
+        console.log('Error en la consulta getChartFechaDistrito', error.message)
+        res.status(500).json({ error: 'Error en la consulta getChartFechaDistrito'})
+    }
+}
+
+export const getChartHoraDistrito = async(req, res) => {
+    try {
+        const { hora1, hora2, codigo } = req.query
+
+        var min = hora1
+        var max = hora2
+
+        min = min.split(':')
+        max = max.split(':')
+
+        var horaMin = new Date()
+        horaMin.setHours(parseInt(min[0]), parseInt(min[1]), 0)
+
+        var horaMax = new Date()
+        horaMax.setHours(parseInt(max[0]), parseInt(max[1]), 0)
+
+        const distritoBD = await DistritoModel.findAll({
+            where: {
+                codigo: codigo
+            },
+            required: true,
+            include: [{
+                    model: BarrioModel,
+                    as: 'barrios',
+                    required: true,
+                    include: [{
+                            model: TraficoModel,
+                            as: 'aforos',
+                            
+                        }]
+                }],
+        })
+
+        /**
+         * Relleno el array de aforos. Inicialmente estara desordenado. Por ejemplo:
+         * Si horaMin = 23:00 y horaMax = 2:00
+         * aforos = [
+         *          {
+         *              estacion: 1,
+         *              trafico: [
+         *                  {
+         *                      hora: 01:00,
+         *                      aforo: 143
+         *                  },
+         *                  {
+         *                      hora: 02:00,
+         *                      aforo: 122
+         *                  },...
+         *              ]
+         *          },...
+         *      ]
+         */
+        horaMin = horaMin.getHours()
+        horaMax = horaMax.getHours()
+        var aforos = []
+        distritoBD[0].barrios.forEach((barrio) => {
+            barrio.aforos.forEach((estacion) => {
+                var encontrado = aforos.find(el => el.estacion === estacion.estacion)
+                if (!encontrado) {
+                    encontrado = {
+                        estacion: estacion.estacion,
+                        lat: estacion.lat,
+                        lon: estacion.lon,
+                        nombre: estacion.nombre,
+                        trafico: []
+                    };
+                    aforos.push(encontrado);
+                }
+                for(let i = 0; i < estacion.trafico.length; i++) {
+                    if((horaMin < horaMax && horaMin <= (i+1) && (i+1) <= horaMax) || (horaMax < horaMin && (horaMin <= (i+1) || (i+1) <= horaMax))) {
+                        var hora = (i + 1) < 10 ? `0${i+1}:00` : `${i+1}:00`
+                        var encontrado2 = encontrado.trafico.find(el => el.hora === hora)
+                        if(encontrado2) {
+                            encontrado2.aforo += estacion.trafico[i]
+                        } else {
+                            encontrado.trafico.push({
+                                aforo: estacion.trafico[i],
+                                hora: hora
+                            })
+                        }          
+                    }
+                }
+            })
+        })
+
+
+        //Relleno el array del distrito (este si estara ordenado desde el principio)
+        var distrito = []
+        horaMax = (horaMax+1) % 25 === 0 ? 1 : (horaMax+1)
+        for(let horaActual = horaMin; horaActual !== horaMax; horaActual++) {
+            horaActual = horaActual % 25
+            horaActual = horaActual === 0 ? 1 : horaActual
+            var horaString = horaActual < 10 ? `0${horaActual}:00` : `${horaActual}:00`
+            var aforoDistrito = 0
+            aforos.forEach((estacion) => {
+                var encontrado = estacion.trafico.find(el => el.hora === horaString)
+                if(encontrado) {
+                    aforoDistrito += encontrado.aforo
+                }
+            })
+
+            distrito.push({
+                hora: horaString,
+                aforo: aforoDistrito
+            })
+        }
+
+        //Ordeno el trafico de cada estacion
+        if(horaMin < 10) {
+            horaMin = `0${horaMin}:00`
+        } else {
+            horaMin = `${horaMin}:00`
+        }
+        var aforos_ordenado = []
+        aforos.forEach((estacion) => {
+            var trafico_ordenado = []
+            
+            var idx = estacion.trafico.findIndex((el) => el.hora === horaMin)
+            for(let i = 0; i < estacion.trafico.length; i++) {
+                trafico_ordenado[i] = estacion.trafico[idx]
+                idx = (idx + 1) % estacion.trafico.length
+            }
+            aforos_ordenado.push({
+                estacion: estacion.estacion,
+                lat: estacion.lat,
+                lon: estacion.lon,
+                nombre: estacion.nombre,
+                trafico: trafico_ordenado,
+            })
+        })
+
+        var centro = calcularPuntoMedio(distritoBD[0].delimitaciones)
+        res.json({ trafico: distrito, aforos: aforos_ordenado, nombre: distritoBD[0].nombre, codigo: distritoBD[0].codigo, delimitaciones: distritoBD[0].delimitaciones, centro })
+    } catch (error) {
+        console.log('Error en la consulta getChartHoraDistrito', error.message)
+        res.status(500).json({ error: 'Error en la consulta getChartHoraDistrito'})
+    }
+}
+
+//------------------------------FILTRO CON 1 ATRIBUTO-----------------------------------------------//
+//BUSCAR POR MES (Y AÑO)
 export const getTraficoPorMes = async(req, res) => {
     try {
-        const { month, year } = req.query
+        const { month, year, orientacion } = req.query
 
         const fecha = new Date(year, month - 1, 1)
         const fechaInicial = startOfMonth(fecha)
@@ -315,218 +706,107 @@ export const getTraficoPorMes = async(req, res) => {
                 fecha: {
                     [Op.between]: [fechaInicial, fechaFinal]
                 }
-            }
+            },
+            attributes: ['id']
         })
 
-        const { estaciones, media } = getEstaciones(trafico)
-        
-        res.json({ estaciones, media })
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, null, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
     } catch (error) {
         console.log('Error en la consulta getTraficoPorMes', error.message)
         res.status(500).json({ error: 'Error en la consulta getTraficoPorMes'})
     }
 }
 
+//BUSCAR POR SENTIDO
 export const getTraficoPorSentido = async(req, res) => {
     try {
         const { sentido } = req.query
-
         const trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
             where: {
-                orient: sentido
-            }
+                '$orientacione.orientacion$': sentido
+            },
+            attributes: ['id']
         })
 
-        const { estaciones, media } = getEstaciones(trafico)
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'true', null, null)
         
-        res.json({ estaciones, media })
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
     } catch (error) {
         console.log('Error en la consulta getTraficoPorSentido', error.message)
         res.status(500).json({ error: 'Error en la consulta getTraficoPorSentido'})
     }
 }
 
-/**
- * Significado de franja segun su valor:
- * - '-'    -> Buscamos en franja de mañana && horaMin < horaMax (1:00 - 12:00)
- * - '='    -> Buscamos en franja de tarde && horaMin < horaMax (13:00 - 24:00)
- * - ''     -> Buscamos en todas las franjas && horaMin < horaMax
- * - '/'    -> Buscamos en todas las franjas && horaMax < horaMin
- * 
- * Si horaMin < horaMax --> Buscamos dentro del intervalo. horaMin <= horaX <= horaMax
- * Si horaMax < horaMin --> Buscamos fuera del intervalo.  horaX <= horaMin && horaMax <= horaX
- */
-
+//BUSCAR ENTRE HORAS
 export const getTraficoEntreHoras = async(req, res) => {
     try {
-        var { min, max } = req.query
+        var { hora1, hora2 } = req.query
 
-        min = min.split(':')
-        max = max.split(':')
+        hora1 = hora1.split(':')
+        hora2 = hora2.split(':')
 
-        var franja = ''
         var horaMin = new Date()
-        horaMin.setHours(parseInt(min[0]), parseInt(min[1]), 0)
-
         var horaMax = new Date()
-        horaMax.setHours(parseInt(max[0]), parseInt(max[1]), 0)
-
-        var limiteMañana = new Date()
-        limiteMañana.setHours(12, 0, 0)
-
-        var trafico = []
-
-        if(horaMax <= limiteMañana && horaMin < horaMax) {
-            franja = '-'
-
-            trafico = await TraficoModel.findAll({
-                where: {
-                    [Op.or]: [
-                        { fsen: '1-' },
-                        { fsen: '2-' }
-                    ]
-                }
-            })
-        } else if(horaMin > limiteMañana && horaMin < horaMax ) {
-            franja = '='
-
-            trafico = await TraficoModel.findAll({
-                where: {
-                    [Op.or]: [
-                        { fsen: '1=' },
-                        { fsen: '2=' }
-                    ]
-                }
-            })
+        if(hora1 < hora2) {
+            horaMin.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+            horaMax.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
         } else {
-            if(horaMin > horaMax) {
-                franja = '/'
-            }
-            trafico = await TraficoModel.findAll()
-        }
+            horaMin.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+            horaMax.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+        }   
+        
 
         horaMin = horaMin.getHours()
         horaMax = horaMax.getHours()
-        if(12 < horaMin) {
-            if(horaMin === 24) {
-                horaMin = 12
-            } else {
-                horaMin = horaMin % 12
-            }
-        }
-        if(12 < horaMax) {
-            if(horaMax === 24) {
-                horaMax = 12
-            } else {
-                horaMax = horaMax % 12
-            }
-        }
         
-        var estaciones = []
-
-        trafico.forEach(data => {
-            
-            var encontrado = estaciones.find(estacion => estacion.estacion === data.estacion)
-            var dataValues = data.dataValues
-            var aforo = 0
-            
-            if(franja === '') {             //horaMin < horaMax
-                if(data.fsen.substring(1) === '-') {    //Franja de mañana
-                    for(const key in dataValues) {
-                        const hora = parseInt(key.substring(3))
-                        if(horaMin <= hora) {
-                            aforo += dataValues[key]
-                        }
-                    }
-                } else {                                //Franja de tarde
-                    for(const key in dataValues) {
-                        const hora = parseInt(key.substring(3))
-                        if(hora <= horaMax) {
-                            aforo += dataValues[key]
-                        }
-                    }
-                }
-            } else if(franja === '/') {     //horaMin > horaMax
-                if(data.fsen.substring(1) === '-') {    //Franja de mañana
-                    for(const key in dataValues) {
-                        const hora = parseInt(key.substring(3))
-                        if(hora <= horaMin) {
-                            aforo += dataValues[key]
-                        }
-                    }
-                } else {                                //Franja de tarde
-                    for(const key in dataValues) {
-                        const hora = parseInt(key.substring(3))
-                        if(horaMax <= hora) {
-                            aforo += dataValues[key]
-                        }
-                    }
-                }
-            } else {                        //horaMin < horaMax && ya hemos filtrado por la franja. No hace falta comprobar fsen
-                for(const key in dataValues) {
-                    const hora = parseInt(key.substring(3))
-                    if(horaMin <= hora && hora <= horaMax) {
-                        aforo += dataValues[key]
-                    }
-                }
-            }
-            
-            if(encontrado === undefined) {
-                estaciones.push({ 
-                    estacion: data.estacion, 
-                    nombre: data.nombre, 
-                    media: aforo, 
-                    total: aforo, 
-                    muestras: 1, 
-                    lat: data.lat, 
-                    lon: data.lon,
-                    sentido: data.orient
-                })
-            } else {
-                encontrado.media = (encontrado.media * encontrado.muestras + aforo) / (encontrado.muestras+1) 
-                encontrado.media = parseFloat(encontrado.media.toFixed(2))
-                encontrado.muestras++
-                encontrado.total += aforo
-            }
+        const trafico = await TraficoModel.findAll({
+            attributes: ['id']
         })
-        
-        var media = 0
-        var i = 0
-        estaciones.forEach(estacion => {
-            media = (media * i + estacion.media) / (i+1)
-            i++
-        })
-        media = parseFloat(media.toFixed(2))
 
-        res.json({ estaciones, media })
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'false', horaMin, horaMax)
+
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
     } catch (error) {
         console.log('Error en la consulta getTraficoEntreHoras', error.message)
         res.status(500).json({ error: 'Error en la consulta getTraficoEntreHoras'})
     }
 }
 
-export const getTraficoPorFecha = async(req, res) => {
+//BUSCAR POR FECHA CONCRETA
+export const getTraficoPorFechaConcreta = async(req, res) => {
     try {
-        const { fecha } = req.query
+        const { fecha, orientacion } = req.query
 
         const trafico = await TraficoModel.findAll({
             where: {
                 fecha: fecha
-            }
+            },
+            attributes: ['id']
         })
 
-        const { estaciones, media } = getEstaciones(trafico)
+        const traficoId = trafico.map(el => el.id)
 
-        res.json({ estaciones, media })
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, null, null)
+        
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
     } catch (error) {
-        console.log('Error en la consulta getTraficoPorFecha', error.message)
-        res.status(500).json({ error: 'Error en la consulta getTraficoPorFecha'})
+        console.log('Error en la consulta getTraficoPorFechaConcreta', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorFechaConcreta'})
     }
 }
 
+//BUSCAR ENTRE FECHAS
 export const getTraficoEntreFechas = async(req, res) => {
     try {
-        const { fecha1, fecha2 } = req.query
+        const { fecha1, fecha2, orientacion } = req.query
         var fechaInicio
         var fechaFin
 
@@ -543,137 +823,425 @@ export const getTraficoEntreFechas = async(req, res) => {
                 fecha: {
                     [Op.between]: [fechaInicio, fechaFin]
                 }
-            }
+            },
+            attributes: ['id']
         })
 
-        const { estaciones, media } = getEstaciones(trafico)
-        
-        res.json({ estaciones, media })
+        const traficoId = trafico.map(el => el.id)
 
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, null, null)
+        
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
     } catch (error) {
         console.log('Error en la consulta getTraficoEntreFechas', error.message)
         res.status(500).json({ error: 'Error en la consulta getTraficoEntreFechas'})
     }
 }
 
-export const getTraficoPorHora = async(req, res) => {
+//BUSCAR POR HORA CONCRETA
+export const getTraficoPorHoraConcreta = async(req, res) => {
     try {
-        const { horaQuery } = req.query
+        const { hora, orientacion } = req.query
 
-        var split = horaQuery.split(':')
+        var split = hora.split(':')
 
-        var hora = new Date()
-        hora.setHours(split[0], split[1], 0)
-        
-        var limiteMañana = new Date()
-        limiteMañana.setHours(12, 0, 0)
+        var horaDate = new Date()
+        horaDate.setHours(split[0], split[1], 0)
+        horaDate = horaDate.getHours()
 
-        var trafico = []
-        if(hora <= limiteMañana) {
-            trafico = await TraficoModel.findAll({
-                where: {
-                    [Op.or]: [
-                        { fsen: '1-' },
-                        { fsen: '2-' }
-                    ]
-                }
-            })
-        } else {
-            trafico = await TraficoModel.findAll({
-                where: {
-                    [Op.or]: [
-                        { fsen: '1=' },
-                        { fsen: '2=' }
-                    ]
-                }
-            })
-        }
-
-        hora = hora.getHours()
-        if(hora > 12) {
-            if(hora === 24) {
-                hora = 12
-            } else {
-                hora = hora % 12
-            }
-        }
-
-        var estaciones = []
-
-        trafico.forEach(data => {
-            var encontrado = estaciones.find(estacion => estacion.estacion === data.estacion)
-            var aforo
-            
-            switch (hora) {
-                case 1:
-                    aforo = data.hor1;
-                    break;
-                case 2:
-                    aforo = data.hor2;
-                    break;
-                case 3:
-                    aforo = data.hor3;
-                    break;
-                case 4:
-                    aforo = data.hor4;
-                    break;
-                case 5:
-                    aforo = data.hor5;
-                    break;
-                case 6:
-                    aforo = data.hor6;
-                    break;
-                case 7:
-                    aforo = data.hor7;
-                    break;
-                case 8:
-                    aforo = data.hor8;
-                    break;
-                case 9:
-                    aforo = data.hor9;
-                    break;
-                case 10:
-                    aforo = data.hor10;
-                    break;
-                case 11:
-                    aforo = data.hor11;
-                    break;
-                case 12:
-                    aforo = data.hor12;
-                    break;
-            }
-            
-            if(encontrado === undefined) {
-                estaciones.push({ 
-                    estacion: data.estacion, 
-                    nombre: data.nombre, 
-                    media: aforo, 
-                    total: aforo, 
-                    muestras: 1, 
-                    lat: data.lat, 
-                    lon: data.lon,
-                    sentido: data.orient
-                })
-            } else {
-                encontrado.media = (encontrado.media * encontrado.muestras + aforo) / (encontrado.muestras+1) 
-                encontrado.media = parseFloat(encontrado.media.toFixed(2))
-                encontrado.muestras++
-                encontrado.total += aforo
-            }
+        const trafico = await TraficoModel.findAll({
+            attributes: ['id']
         })
 
-        var media = 0
-        var i = 0
-        estaciones.forEach(estacion => {
-            media = (media * i + estacion.media) / (i+1)
-            i++
-        })
-        media = parseFloat(media.toFixed(2))
+        const traficoId = trafico.map(el => el.id)
 
-        res.json({ estaciones, media })
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, horaDate, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
     } catch (error) {
         console.log('Error en la consulta getTraficoPorHora', error.message)
         res.status(500).json({ error: 'Error en la consulta getTraficoPorHora'})
+    }
+}
+//------------------------------FILTRO CON 2 ATRIBUTOS-----------------------------------------------//
+//MES (Y AÑO) +
+//BUSCAR POR MES + SENTIDO
+export const getTraficoPorMesSentido = async(req, res) => {
+    try {
+        const { month, year, sentido } = req.query
+        
+        const fecha = new Date(year, month - 1, 1)
+        const fechaInicial = startOfMonth(fecha)
+        const fechaFinal = endOfMonth(fecha)
+
+        const trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
+            where: {
+                '$orientacione.orientacion$': sentido,
+                fecha: {
+                    [Op.between]: [fechaInicial, fechaFinal]
+                }
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'true', null, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorMesSentido', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorMesSentido'})
+    }
+}
+
+//BUSCAR POR MES + HORA CONCRETA
+export const getTraficoPorMesHoraConcreta = async(req, res) => {
+    try {
+        const { month, year, orientacion, hora } = req.query
+
+        var split = hora.split(':')
+        var horaDate = new Date()
+        horaDate.setHours(split[0], split[1], 0)
+        horaDate = horaDate.getHours()
+
+        const fecha = new Date(year, month - 1, 1)
+        const fechaInicial = startOfMonth(fecha)
+        const fechaFinal = endOfMonth(fecha)
+
+        const trafico = await TraficoModel.findAll({
+            where: {
+                fecha: {
+                    [Op.between]: [fechaInicial, fechaFinal]
+                }
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, horaDate, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorMesHoraConcreta', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorMesHoraConcreta'})
+    }
+}
+
+//BUSCAR POR MES + ENTRE HORAS
+export const getTraficoPorMesEntreHoras = async(req, res) => {
+    try {
+        var { month, year, orientacion, hora1, hora2 } = req.query
+
+        hora1 = hora1.split(':')
+        hora2 = hora2.split(':')
+        var horaMin = new Date()
+        var horaMax = new Date()
+        if(hora1 < hora2) {
+            horaMin.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+            horaMax.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+        } else {
+            horaMin.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+            horaMax.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+        }   
+
+        const fecha = new Date(year, month - 1, 1)
+        const fechaInicial = startOfMonth(fecha)
+        const fechaFinal = endOfMonth(fecha)
+
+        const trafico = await TraficoModel.findAll({
+            where: {
+                fecha: {
+                    [Op.between]: [fechaInicial, fechaFinal]
+                }
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, horaMin, horaMax)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorMesEntreHoras', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorMesEntreHoras'})
+    }
+}
+
+//--------------------------------------------------------------------------
+//FECHA CONCRETA +
+//BUSCAR POR FECHA CONCRETA + SENTIDO
+export const getTraficoPorFechaConcretaSentido = async(req, res) => {
+    try {
+        const { fecha, sentido } = req.query
+
+        const trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
+            where: {
+                '$orientacione.orientacion$': sentido,
+                fecha: fecha
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'true', null, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorFechaConcretaSentido', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorFechaConcretaSentido'})
+    }
+}
+
+//BUSCAR POR FECHA CONCRETA + HORA CONCRETA
+export const getTraficoPorFechaConcretaHoraConcreta = async(req, res) => {
+    try {
+        const { fecha, orientacion, hora } = req.query
+
+        var split = hora.split(':')
+
+        var horaDate = new Date()
+        horaDate.setHours(split[0], split[1], 0)
+        horaDate = horaDate.getHours()
+
+        const trafico = await TraficoModel.findAll({
+            where: {
+                fecha: fecha
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, hora, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorFechaConcretaHoraConcreta', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorFechaConcretaHoraConcreta'})
+    }
+}
+
+//BUSCAR POR FECHA CONCRETA + ENTRE HORAS
+export const getTraficoPorFechaConcretaEntreHoras = async(req, res) => {
+    try {
+        var { fecha, orientacion, hora1, hora2 } = req.query
+
+        hora1 = hora1.split(':')
+        hora2 = hora2.split(':')
+        var horaMin = new Date()
+        var horaMax = new Date()
+        if(hora1 < hora2) {
+            horaMin.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+            horaMax.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+        } else {
+            horaMin.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+            horaMax.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+        }   
+
+        const trafico = await TraficoModel.findAll({
+            where: {
+                fecha: fecha
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, horaMin, horaMax)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorFechaConcretaEntreHoras', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorFechaConcretaEntreHoras'})
+    }
+}
+
+//--------------------------------------------------------------------------
+//ENTRE FECHAS +
+//BUSCAR POR ENTRE FECHAS + SENTIDO
+export const getTraficoPorEntreFechasSentido = async(req, res) => {
+    try {
+        const { fecha1, fecha2, sentido } = req.query
+
+        var fechaInicio
+        var fechaFin
+
+        if(fecha1 <= fecha2) {
+            fechaInicio = fecha1
+            fechaFin = fecha2
+        } else {
+            fechaInicio = fecha2
+            fechaFin = fecha1
+        }
+
+        const trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
+            where: {
+                '$orientacione.orientacion$': sentido,
+                fecha: {
+                    [Op.between]: [fechaInicio, fechaFin]
+                }
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'true', null, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorEntreFechasSentido', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorEntreFechasSentido'})
+    }
+}
+
+//BUSCAR POR ENTRE FECHAS + HORA CONCRETA
+export const getTraficoPorEntreFechasHoraConcreta = async(req, res) => {
+    try {
+        const { fecha1, fecha2, orientacion, hora } = req.query
+
+        var split = hora.split(':')
+        var horaDate = new Date()
+        horaDate.setHours(split[0], split[1], 0)
+        horaDate = horaDate.getHours()
+
+        var fechaInicio
+        var fechaFin
+        if(fecha1 <= fecha2) {
+            fechaInicio = fecha1
+            fechaFin = fecha2
+        } else {
+            fechaInicio = fecha2
+            fechaFin = fecha1
+        }
+
+        const trafico = await TraficoModel.findAll({
+            where: {
+                fecha: {
+                    [Op.between]: [fechaInicio, fechaFin]
+                }
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, horaDate, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorEntreFechasHoraConcreta', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorEntreFechasHoraConcreta'})
+    }
+}
+
+//BUSCAR POR ENTRE FECHAS + ENTRE HORAS
+export const getTraficoPorEntreFechasEntreHoras = async(req, res) => {
+    try {
+        var { fecha1, fecha2, orientacion, hora1, hora2 } = req.query
+
+        hora1 = hora1.split(':')
+        hora2 = hora2.split(':')
+        var horaMin = new Date()
+        var horaMax = new Date()
+        if(hora1 < hora2) {
+            horaMin.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+            horaMax.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+        } else {
+            horaMin.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+            horaMax.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+        }   
+
+        var fechaInicio
+        var fechaFin
+        if(fecha1 <= fecha2) {
+            fechaInicio = fecha1
+            fechaFin = fecha2
+        } else {
+            fechaInicio = fecha2
+            fechaFin = fecha1
+        }
+
+        const trafico = await TraficoModel.findAll({
+            where: {
+                fecha: {
+                    [Op.between]: [fechaInicio, fechaFin]
+                }
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, horaMin, horaMax)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorEntreFechasEntreHoras', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorEntreFechasEntreHoras'})
+    }
+}
+
+//--------------------------------------------------------------------------
+//BUSCAR POR HORA CONCRETA + SENTIDO
+export const getTraficoPorHoraConcretaSentido = async(req, res) => {
+    try {
+        const { hora, sentido } = req.query
+
+        var split = hora.split(':')
+
+        var horaDate = new Date()
+        horaDate.setHours(split[0], split[1], 0)
+        horaDate = horaDate.getHours()
+
+        const trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
+            where: {
+                '$orientacione.orientacion$': sentido
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'true', horaDate, null)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorHoraConcretaSentido', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorHoraConcretaSentido'})
+    }
+}
+
+//--------------------------------------------------------------------------
+//BUSCAR POR ENTRE HORAS + SENTIDO
+export const getTraficoPorEntreHorasSentido = async(req, res) => {
+    try {
+        var { hora1, hora2, sentido } = req.query
+
+        hora1 = hora1.split(':')
+        hora2 = hora2.split(':')
+        var horaMin = new Date()
+        var horaMax = new Date()
+        if(hora1 < hora2) {
+            horaMin.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+            horaMax.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+        } else {
+            horaMin.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+            horaMax.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+        }   
+
+        const trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
+            where: {
+                '$orientacione.orientacion$': sentido
+            },
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'true', horaMin, horaMax)
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta getTraficoPorEntreHorasSentido', error.message)
+        res.status(500).json({ error: 'Error en la consulta getTraficoPorEntreHorasSentido'})
     }
 }
 
@@ -683,6 +1251,9 @@ export const getTraficoPorHora = async(req, res) => {
  */
 export const leerCSV = async(req, res) => {
     try {
+        const barrios = await BarrioModel.findAll()
+        var i = 0
+
         //Leemos csv de la ubicacion de las estaciones permanentes y almacenamos los datos en una lista 
         //Para cuando leamos el csv del trafico poder almacenar toda la info en la bd 
         /*Formato:
@@ -698,7 +1269,10 @@ export const leerCSV = async(req, res) => {
 
         let batchCount = 0; // Contador de lotes
         const batchSize = 100; // Tamaño del lote
-        var estaciones = []
+        var estaciones = []     //Aqui almaceno los datos leidos en el primer csv (nombre, nº estacion, lat y lon, orientacion)
+        var aforos = []         //Aqui almaceno los datos definitivos que subire a la bd
+        let promises = []
+
         //Ya que no puedo acceder al campo 'Estación' voy a tener que usar 2 iteradores para almacenar el numero de la estacion
         var cod_estacion = 1
         var par = 1
@@ -706,6 +1280,7 @@ export const leerCSV = async(req, res) => {
         // Lectura del csv desde la web
         
         const urlCSV = 'https://datos.madrid.es/egob/catalogo/300233-70-aforo-trafico-permanentes.csv'
+                       
         const response = await axios.get(urlCSV, { responseType: 'stream' })
 
         //Parsear el contenido del CSV y procesar cada fila
@@ -723,8 +1298,10 @@ export const leerCSV = async(req, res) => {
                 // Procesar cada fila del CSV
                 //console.log(row)
                 //console.log(row['Estación'])
-                
-                estaciones.push({estacion: cod_estacion, nombre: row.Nombre, lat: row.Latitud, lon: row.Longitud, sentido: row.Sentido, orient: row['Orient.']})
+                if(row.Sentido !== '' && row['Orient.'] !== '') {
+                    estaciones.push({estacion: cod_estacion, nombre: row.Nombre, lat: row.Latitud, lon: row.Longitud, sentido: row.Sentido, orient: row['Orient.']})
+                    console.log('Est = ' + cod_estacion + ' | Orient = ' + row['Orient.'])
+                }
                 cod_estacion += par%2 == 0 ? 1 : 0
                 par++
             })
@@ -761,7 +1338,7 @@ export const leerCSV = async(req, res) => {
         //Al leer el csv y terminar de leer las filas de datos sigue cogiendo valores el row. Uso stopReading para dejar de leer el CSV 
         let stopReading = false
 
-        //Me estaba dando error al obtener el atributo FDIA del row. Con esta configuracion del csv-parse se ha solucionado
+        //Me estaba dando error al obtener el atributo FDIA del row. Con esta configuracion del csv-parser se ha solucionado
         const csvParserOptions = {
             separator: ';', // Define el delimitador, por ejemplo, ';' para CSV con separador de punto y coma
             mapHeaders: ({ header }) => header.trim(), // Función para mapear y limpiar los encabezados si es necesario
@@ -769,7 +1346,7 @@ export const leerCSV = async(req, res) => {
         }; 
 
         // Lectura del csv desde la web 
-        const urlCSV2 = 'https://datos.madrid.es/egob/catalogo/300233-147-aforo-trafico-permanentes.csv'
+        const urlCSV2 = 'https://datos.madrid.es/egob/catalogo/300233-141-aforo-trafico-permanentes.csv'
         const response2 = await axios.get(urlCSV2, { responseType: 'stream' })
 
         //Parsear el contenido del CSV y procesar cada fila
@@ -782,66 +1359,118 @@ export const leerCSV = async(req, res) => {
         //const fileStream2 = fs.createReadStream(filePath2, { encoding: 'utf-8' });       
         //fileStream2.pipe(csvParser(csvParserOptions))
         csvStream.on('data', async (row) => {
-                // Procesar cada fila del CSV
-                if (!stopReading) {
-                    //console.log(row);
-                    // Condición para detener la lectura del CSV
-                    if (row.FEST === '') {
-                        stopReading = true; 
-                        csvStream.destroy(); 
-                    }
+                i++
+                if(i > 0) {
+                    // Procesar cada fila del CSV
+                    if (!stopReading) {
+                        //console.log(row);
+                        // Condición para detener la lectura del CSV
+                        if (row.FEST === '') {
+                            stopReading = true; 
+                            csvStream.destroy(); 
+                        }
 
-                    let estacion = (row.FEST).slice(2)
-                    if(estacion[0] === '0') {
-                        estacion = estacion.slice(1)
-                    }
-                    
-                    let est
-                    if((row.FSEN.substring(0,1)) === '1') {
-                        est = estaciones.find(estacionActual => estacionActual.estacion === parseInt(estacion) && estacionActual.sentido === '1')
-                    } else {
-                        est = estaciones.find(estacionActual => estacionActual.estacion === parseInt(estacion) && estacionActual.sentido === '2')
-                    }
-                    
-                    if(est !== undefined) {
-                        var partesFecha = row['FDIA'].split('/')
-                        var nuevaFecha = partesFecha[2] + '/' + partesFecha[1] + '/' + partesFecha[0]
+                        let estacion = (row.FEST).slice(2)
+                        if(estacion[0] === '0') {
+                            estacion = estacion.slice(1)
+                        }
+                        
+                        var sentido = row.FSEN.substring(0,1)
 
-                        var cadLat = est.lat.replace(',', '.')
-                        var cadLon = est.lon.replace(',', '.')
 
-                        await TraficoModel.create({
-                            'fecha': nuevaFecha,
-                            'estacion': estacion,
-                            'fsen': row.FSEN,
-                            'orient': est.orient,
-                            'hor1': row.HOR1,
-                            'hor2': row.HOR2,
-                            'hor3': row.HOR3,
-                            'hor4': row.HOR4,
-                            'hor5': row.HOR5,
-                            'hor6': row.HOR6,
-                            'hor7': row.HOR7,
-                            'hor8': row.HOR8,
-                            'hor9': row.HOR9,
-                            'hor10': row.HOR10,
-                            'hor11': row.HOR11,
-                            'hor12': row.HOR12,
-                            'lat': parseFloat(cadLat),
-                            'lon': parseFloat(cadLon),
-                            'nombre': est.nombre
-                        })
+                        let est = estaciones.find(estacionActual => estacionActual.estacion === parseInt(estacion) && estacionActual.sentido === sentido)
+                        if(est) {
+                            var cadLat = est.lat.replace(',', '.')
+                            var latitude = parseFloat(cadLat)
+
+                            var cadLon = est.lon.replace(',', '.')
+                            var longitude = parseFloat(cadLon)
+
+                            var barrio = encontrarZona(latitude, longitude, barrios)
+                            if(barrio !== null) {
+                                var orientacion
+                                switch(est.orient) {
+                                    case 'N-S':
+                                        orientacion = 1
+                                        break
+                                    case 'S-N':
+                                        orientacion = 2
+                                        break
+                                    case 'E-O':
+                                        orientacion = 3
+                                        break
+                                    default:
+                                        orientacion = 4
+                                }
+                                
+                                var traf = [parseInt(row.HOR1), parseInt(row.HOR2), parseInt(row.HOR3),
+                                            parseInt(row.HOR4), parseInt(row.HOR5), parseInt(row.HOR6),
+                                            parseInt(row.HOR7), parseInt(row.HOR8), parseInt(row.HOR9), 
+                                            parseInt(row.HOR10), parseInt(row.HOR11), parseInt(row.HOR12)]
+                                var partesFecha = row['FDIA'].split('/')
+                                var nuevaFecha = partesFecha[2] + '/' + partesFecha[1] + '/' + partesFecha[0]
+
+                                var encontrado = aforos.find(el => el.fecha === nuevaFecha && el.estacion === estacion && el.orientacion === orientacion)
+                                if(encontrado) {
+                                    if((row.FSEN.substring(1,2)) === '-') {     //Jornada de mañana (añado los datos al inicio de la lista trafico)
+                                        encontrado.trafico.unshift(parseInt(row.HOR1), parseInt(row.HOR2), parseInt(row.HOR3),
+                                                                    parseInt(row.HOR4), parseInt(row.HOR5), parseInt(row.HOR6),
+                                                                    parseInt(row.HOR7), parseInt(row.HOR8), parseInt(row.HOR9), 
+                                                                    parseInt(row.HOR10), parseInt(row.HOR11), parseInt(row.HOR12))
+                                    } else {    //Jornada de tarde (añado los datos al final de la lista trafico)
+                                        encontrado.trafico.push(parseInt(row.HOR1), parseInt(row.HOR2), parseInt(row.HOR3),
+                                                                parseInt(row.HOR4), parseInt(row.HOR5), parseInt(row.HOR6),
+                                                                parseInt(row.HOR7), parseInt(row.HOR8), parseInt(row.HOR9), 
+                                                                parseInt(row.HOR10), parseInt(row.HOR11), parseInt(row.HOR12))
+                                    }
+                                    promises.push(createTrafico(encontrado))
+                                } else {
+                                    aforos.push({ fecha: nuevaFecha, estacion, orientacion, barrio: barrio.id, trafico: traf, latitude, longitude, nombre: est.nombre })
+                                }
+                            } 
+                        } else{
+                            console.log('UNDEFINED = ' + estacion)
+                        }
+                         
                     }
-                    
                 }
+                
             })
-            .on('end', () => {
-                console.log('Procesamiento del CSV de aforos de trafico completado.');
-                res.json('Procesamiento del CSV de aforos de trafico completado')
-                //console.log(estaciones)
+            .on('end', async() => {
+                try {
+                    await Promise.all(promises);
+                    console.log("Procesamiento del CSV de aforos de trafico completo.");
+                    res.json("Aforos creados correctamente");
+                  } catch (error) {
+                    console.error("Error al crear los aforos:", error);
+                    res.status(500).json({ message: "Error al crear los aforos" });
+                  }
             });
     } catch (error) {
         console.error('Error al leerCSV de las estaciones de trafico y/o aforos:', error.message);
         res.status(500).json({ error: 'Error al leerCSV de las estaciones de trafico y/o aforos.' });
     }
 }
+
+const createTrafico = (data) => {
+    return new Promise((resolve, reject) => {
+      TraficoModel.create({
+        'fecha': data.fecha,
+        'estacion': data.estacion,
+        'lat': data.latitude,
+        'lon': data.longitude,
+        'nombre': data.nombre,
+        'trafico': data.trafico,
+        'barrioId': data.barrio,
+        'orientacioneId': data.orientacion
+      })
+        .then(() => {
+          console.log(`Datos de tráfico creados`);
+          resolve();
+        })
+        .catch((error) => {
+          console.error(`Error al crear datos de tráfico:`, error);
+          reject(error);
+        });
+    });
+  };

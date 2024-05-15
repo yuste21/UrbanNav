@@ -6,6 +6,9 @@ import routerAccidente from './routes/routesAccidente.js'
 import routerEstacionamiento from './routes/routesEstacionamiento.js'
 import routerRadar from './routes/routesRadar.js'
 import routerTrafico from './routes/routesTrafico.js'
+import routerDistrito from './routes/routesDistrito.js'
+import routerBarrio from './routes/routesBarrio.js'
+import routerMultas from './routes/routesMultas.js'
 
 const app = express()
 
@@ -20,6 +23,9 @@ app.use('/accidentes', routerAccidente)
 app.use('/estacionamientos', routerEstacionamiento)
 app.use('/radares', routerRadar)
 app.use('/trafico', routerTrafico)
+app.use('/distritos', routerDistrito)
+app.use('/barrios', routerBarrio)
+app.use('/multas', routerMultas)
 
 try {
     await db.authenticate()

@@ -1,23 +1,57 @@
-import EstacionamientoModel from "../models/EstacionamientoModel.js";
+import { Tipo_EstacionamientoModel, ColorModel, EstacionamientoModel } from '../models/EstacionamientoModel.js';
 import axios from 'axios'
 import proj4 from "proj4";
 import csvParser from 'csv-parser'
 import { UTMtoGPS } from "./AccidenteController.js";
+import { Op } from "sequelize";
 
 //Para leer desde el directorio local
 import fs from 'fs'
 import path from 'path'
+import { DistritoModel } from '../models/DistritoModel.js';
+import { BarrioModel } from '../models/DistritoModel.js';
+import { encontrarZona } from './DistritoController.js';
 
 
 /*
 SER                 = 32.111
 Reducida            = 11.983
-Motos               = 1.312
-Carga y Descarga    = 2.820
+Motos               = 1.312 - Con barrios es 1310
+Carga y Descarga    = 2.820 - Cpn barrios es 2819
 Total               = 48.227
 */
+
+export const getTipoEstacionamiento = async(req, res) => {
+    try {
+        const tipo_estacionamiento = await Tipo_EstacionamientoModel.findAll()
+
+        res.json(tipo_estacionamiento)
+    } catch (error) {
+        console.log('Error en la consulta getTipoEstacionamiento: ', error)
+        res.status(500).json({ message: 'Error en la consulta getTipoEstacionamiento' })
+    }
+}
+
+export const getColor = async(req, res) => {
+    try {
+        const color = await ColorModel.findAll()
+
+        res.json(color)
+    } catch (error) {
+        console.log('Error en la consulta getColor: ', error)
+        res.status(500).json({ message: 'Error en la consulta getColor' })
+    }
+}
+
 export const getAllEstacionamientos = async(req, res) => {
     try {
+        /*const estacionamientos = await EstacionamientoModel.findAll({
+            include: [
+                { model: Tipo_EstacionamientoModel },
+                { model: ColorModel }
+            ]
+        })*/
+
         const estacionamientos = await EstacionamientoModel.findAll()
 
         console.log(estacionamientos.length)
@@ -46,117 +80,100 @@ export const getAllEstacionamientos = async(req, res) => {
 */
 export const leerCSV_ser = async(req, res) => {
     try {
+        var contadorFallos = 0
+        const barrios = await BarrioModel.findAll()
+        var i = 0
+
+        let batchCount = 0; // Contador de lotes
+        const batchSize = 50; // Tamaño del lote
+
         //Leemos csv de los estacionamientos SER
         // Lectura del csv desde la web
         
-        const urlCSV = 'https://datos.madrid.es/egob/catalogo/218228-16-SER-calles.csv'
-        const response = await axios.get(urlCSV, { responseType: 'stream' })
+        //const urlCSV = 'https://datos.madrid.es/egob/catalogo/218228-16-SER-calles.csv'
+        //const response = await axios.get(urlCSV, { responseType: 'stream' })
 
-        response.data.pipe(csvParser({ separator: ';' }))
+        //response.data.pipe(csvParser({ separator: ';' }))
         
         //---------------------------------------------------------------------------------------
        // Ruta al archivo CSV en tu directorio local
-       //const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Estacionamiento(SER)/estacionamiento.csv';
+        const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Estacionamiento(SER)/estacionamiento.csv';
 
        // Leer el archivo CSV localmente
-       //const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
-       //fileStream.pipe(csvParser({ separator: ';' }))
+        const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+        fileStream.pipe(csvParser({ separator: ';' }))
 
             .on('data', async (row) => {
-                console.log(row)
+                //console.log(row)
+                i++
+                if(i > 27370) {
+                    const { latitude, longitude } = UTMtoGPS(parseFloat(row.gis_x), parseFloat(row.gis_y))
 
-                const { latitude, longitude } = UTMtoGPS(parseFloat(row.gis_x), parseFloat(row.gis_y))
+                    //console.log('Calle = ' + row.calle)
 
-                //console.log('Calle = ' + row.calle)
+                    var tipo
+                    if(row.bateria_linea.startsWith('L')) {
+                        tipo = 1
+                    } else {
+                        tipo = 2
+                    }
+                    //console.log('Tipo = ' + tipo)
 
-                var tipo
-                if(row.bateria_linea.startsWith('L')) {
-                    tipo = 'Línea'
-                } else {
-                    tipo = 'Batería'
-                }
-                //console.log('Tipo = ' + tipo)
+                    
+                    var color = row.color.split(' ')[1]
+                    var idColor
+                    
+                    switch(color) {
+                        case 'Verde':
+                            idColor = 1
+                            break
+                        case 'Naranja':
+                            idColor = 3
+                            break
+                        case 'Azul': 
+                            idColor = 2 
+                            break
+                        case 'Rojo':
+                            idColor = 4
+                            break
+                        default:
+                            idColor = 8
+                    }
 
-                var cod_distrito = row.distrito.substring(0, 2)
-                var distrito = row.distrito.slice(4)
-                switch(cod_distrito) {
-                    case '05':
-                        distrito = 'CHAMARTÍN'
-                        break
-                    case '06':
-                        distrito = 'TETUÁN'
-                        break
-                    case '07':
-                        distrito = 'CHAMBERÍ'
-                        break
-                    default:
+                    
+                    var barrio = encontrarZona(latitude, longitude, barrios)
+                    if (row.plazas !== '' && barrio !== null) { // Verifica si no es una cadena vacía y si es un número válido
+                        await EstacionamientoModel.create({
+                            'lat': latitude,
+                            'lon': longitude,
+                            'barrioId': barrio.id,
+                            'coloreId': idColor,
+                            'tipoEstacionamientoId': tipo,
+                            'plazas': parseInt(row.num_plazas) // Convierte el valor a un entero antes de insertarlo
+                        });
+                    }
 
-                }
-                //console.log('Distrito = ' + distrito)
+                    // Incrementar el contador de lotes
+                    batchCount++;
 
-                var cod_barrio = row.barrio.substring(0,5)
-                var barrio = row.barrio.slice(6)
-                switch(cod_barrio) {
-                    case '03-01':
-                        barrio = 'PACÍFICO'
-                        break
-                    case '03-05':
-                        barrio = 'JERÓNIMOS'
-                        break
-                    case '03-06':
-                        barrio = 'NIÑO JESÚS'
-                        break
-                    case '05-03':
-                        barrio = 'CIUDAD JARDÍN'
-                        break
-                    case '05-04':
-                        barrio = 'HISPANOAMÉRICA'
-                        break
-                    case '07-05':
-                        barrio = 'RÍOS ROSAS'
-                        break
-                    case '09-02':
-                        barrio = 'ARGÜELES'
-                        break
-                    case '10-01':
-                        barrio = 'CÁRMENES'
-                        break
-                    case '10-02':
-                        barrio = 'PUERTA DEL ÁNGEL'
-                        break
-                    case '15-04':
-                        barrio = 'CONCEPCIÓN'
-                        break
-                    default:
+                    // Si hemos alcanzado el tamaño del lote, hacemos una pausa
+                    if (batchCount === batchSize) {
+                        // Agregar una espera de 10 segundos entre lotes
+                        await new Promise(resolve => setTimeout(resolve, 40000));
 
-                }
-                //console.log('Barrio = ' + barrio)
+                        // Reiniciar el contador de lotes
+                        batchCount = 0;
+                    }
 
-                var color = row.color.split(' ')[1]
-                //console.log('Color = ' + color)
-
-                //console.log('Plazas = ' + row.num_plazas)
-
-                
-                if (row.plazas !== '') { // Verifica si no es una cadena vacía y si es un número válido
-                    await EstacionamientoModel.create({
-                        'lat': latitude,
-                        'lon': longitude,
-                        'distrito': distrito,
-                        'barrio': barrio,
-                        'color': color,
-                        'tipo': tipo,
-                        'plazas': parseInt(row.num_plazas) // Convierte el valor a un entero antes de insertarlo
-                    });
-                
                     // Agregar una espera de 100 milisegundos entre cada iteración
                     await new Promise(resolve => setTimeout(resolve, 10000));
+                    
                 }
                 
             })
             .on('end', () => {
                 console.log('Procesamiento del CSV de estacionamientos SER completo.');
-                res.json('Estacionamientos SER creados correctamente')
+                res.json({mensaje: 'Estacionamientos SER creados correctamente', contadorFallos, i})
             })
 
             
@@ -187,6 +204,16 @@ export const leerCSV_ser = async(req, res) => {
 */
 export const leerCSV_reducida = async(req, res) => {
     try {
+        var contadorFallos = 0
+        const barrios = await BarrioModel.findAll()
+
+        const estacionamientos = await EstacionamientoModel.findAll()
+        var encontrado
+        var i = 0
+
+        let batchCount = 0; // Contador de lotes
+        const batchSize = 50; // Tamaño del lote
+
         //Leemos csv de los estacionamientos Movilidad reducida
         // Lectura del csv desde la web
         
@@ -204,144 +231,50 @@ export const leerCSV_reducida = async(req, res) => {
         //fileStream.pipe(csvParser({ separator: ';' }))
 
             .on('data', async (row) => {
-                console.log(row)                
-                
-                var tipo
-                if(row['Línea / Batería'] === '') {
-                    tipo = 'desconocido'
-                } else {
-                    tipo = row['Línea / Batería']
-                }
+                //console.log(row)                
+                i++
+                if(i > 0) {
+                    var tipo
+                    switch(row['Línea / Batería']) {
+                        case 'Línea':
+                            tipo = 1
+                            break
+                        case 'Batería':
+                            tipo = 2
+                            break
+                        default:
+                            tipo = 3
+                    }
 
-                //console.log('Tipo = ' + tipo)
-                
-                var cod_distrito = row.Distrito.substring(0, 2)
-                var distrito = row.Distrito.slice(4)
-                switch(cod_distrito) {
-                    case '05':
-                        distrito = 'CHAMARTÍN'
-                        break
-                    case '06':
-                        distrito = 'TETUÁN'
-                        break
-                    case '07':
-                        distrito = 'CHAMBERÍ'
-                        break
-                    case '19':
-                        distrito = 'VICÁLVARO'
-                        break
-                    default:
+                    //console.log('Tipo = ' + tipo)
+                    var plazas = parseInt(row['Número de Plazas'])
 
-                }
-                //console.log('Distrito = ' + distrito)
-                
-                var cod_barrio = row.Barrio.substring(0,5)
-                var barrio = row.Barrio.slice(6)
-                switch(cod_barrio) {
-                    case '03-01':
-                        barrio = 'PACÍFICO'
-                        break
-                    case '03-05':
-                        barrio = 'JERÓNIMOS'
-                        break
-                    case '03-06':
-                        barrio = 'NIÑO JESÚS'
-                        break
-                    case '05-03':
-                        barrio = 'CIUDAD JARDÍN'
-                        break
-                    case '05-04':
-                        barrio = 'HISPANOAMÉRICA'
-                        break
-                    case '07-05':
-                        barrio = 'RÍOS ROSAS'
-                        break
-                    case '09-02':
-                        barrio = 'ARGÜELES'
-                        break
-                    case '09-05':
-                        barrio = 'VALDEMARÍN'
-                        break
-                    case '09-06':
-                        barrio = 'EL PLANTÍO'
-                        break
-                    case '10-01':
-                        barrio = 'CÁRMENES'
-                        break
-                    case '10-02':
-                        barrio = 'PUERTA DEL ÁNGEL'
-                        break
-                    case '10-07':
-                        barrio = 'ÁGUILAS'
-                        break
-                    case '11-02':
-                        barrio = 'OPAÑEL'
-                        break
-                    case '12-03':
-                        barrio = 'SAN FERMÍN'
-                        break
-                    case '12-05':
-                        barrio = 'MOSCARDÓ'
-                        break
-                    case '12-06':
-                        barrio = 'ZOFÍO'
-                        break
-                    case '13-01':
-                        barrio = 'ENTREVÍAS'
-                        break
-                    case '14-05':
-                        barrio = 'FONTARRÓN'
-                        break
-                    case '15-04':
-                        barrio = 'CONCEPCIÓN'
-                        break
-                    case '16-05':
-                        barrio = 'APÓSTOL SANTIAGO'
-                        break
-                    case '17-01':
-                        barrio = 'CASCO HISTÓRICO DE VILLAVERDE'
-                        break
-                    case '17-02':
-                        barrio = 'SAN CRISTÓBAL'
-                        break
-                    case '17-05':
-                        barrio = 'LOS ÁNGELES'
-                        break
-                    case '18-01':
-                        barrio = 'CASCO HISTÓRICO DE VALLECAS'
-                        break
-                    case '19-01':
-                        barrio = 'CASCO HISTÓRICO DE VICÁLVARO'
-                        break
-                    case '20-02':
-                        barrio = 'HELLÍN'
-                        break
-                    case '21-03':
-                        barrio = 'CASCO HISTÓRICO DE BARAJAS'
-                        break
-                    case '21-04':
-                        barrio = 'TIMÓN'
-                        break
-                    
-                    default:
+                    var latitude = parseFloat(row.Latitud)
+                    var longitude = parseFloat(row.Longitud)
+                    var barrio = encontrarZona(latitude, longitude, barrios)
+                    if (row.plazas !== '' && barrio !== null && !isNaN(plazas)) { // Verifica si no es una cadena vacía y si es un número válido
+                        await EstacionamientoModel.create({
+                            'lat': latitude,
+                            'lon': longitude,
+                            'barrioId': barrio.id,
+                            'coloreId': 5,
+                            'tipoEstacionamientoId': tipo,
+                            'plazas': parseInt(row['Número de Plazas']) // Convierte el valor a un entero antes de insertarlo
+                        });
+                    }
 
-                }
-                //console.log('Barrio = ' + barrio)
-                
-            
-                //console.log('Plazas = ' + row.num_plazas)
-                
-                if (row.plazas !== '' && row.Barrio !== 'Sin Asignar' && row.Distrito !== 'Sin Asignar') { // Verifica si no es una cadena vacía y si es un número válido
-                    await EstacionamientoModel.create({
-                        'lat': parseFloat(row.Latitud),
-                        'lon': parseFloat(row.Longitud),
-                        'distrito': distrito,
-                        'barrio': barrio,
-                        'color': 'Amarillo',
-                        'tipo': tipo,
-                        'plazas': parseInt(row['Número de Plazas']) // Convierte el valor a un entero antes de insertarlo
-                    });
-                
+                    // Incrementar el contador de lotes
+                    batchCount++;
+
+                    // Si hemos alcanzado el tamaño del lote, hacemos una pausa
+                    if (batchCount === batchSize) {
+                        // Agregar una espera de 10 segundos entre lotes
+                        await new Promise(resolve => setTimeout(resolve, 40000));
+
+                        // Reiniciar el contador de lotes
+                        batchCount = 0;
+                    }
+
                     // Agregar una espera de 100 milisegundos entre cada iteración
                     await new Promise(resolve => setTimeout(resolve, 10000));
                 }
@@ -380,6 +313,16 @@ export const leerCSV_reducida = async(req, res) => {
 //Parece que el acceso esta siendo denegado
 export const leerCSV_motos = async(req, res) => {
     try {
+        var contadorFallos = 0
+        const barrios = await BarrioModel.findAll()
+
+        const estacionamientos = await EstacionamientoModel.findAll()
+        var encontrado
+        var i = 0
+
+        let batchCount = 0; // Contador de lotes
+        const batchSize = 50; // Tamaño del lote
+
         //Leemos csv de los estacionamientos MOTOS
         // Lectura del csv desde la web
         
@@ -397,165 +340,70 @@ export const leerCSV_motos = async(req, res) => {
         //fileStream.pipe(csvParser({ separator: ';' }))
 
             .on('data', async (row) => {
-                console.log(row)                
-                
-                //Como no se codifican bien los caracteres con tilde tengo que hacer esto
-                // Buscar la clave que comienza con 'L'
-                const lineaBateriaKey = Object.keys(row).find(key => key.startsWith('L'));
+                //console.log(row)                
+                i++
+                if(i > 0) {
+                    //Como no se codifican bien los caracteres con tilde tengo que hacer esto
+                    // Buscar la clave que comienza con 'L'
+                    const lineaBateriaKey = Object.keys(row).find(key => key.startsWith('L'));
 
-                // Obtener el valor de 'Línea / Batería'
-                const lineaBateriaValue = row[lineaBateriaKey];
-                var tipo
-                if(lineaBateriaValue === '') {
-                    tipo = 'desconocido'
-                } else if(lineaBateriaValue.startsWith('L')){
-                    tipo = 'Línea'
-                } else {
-                    tipo = 'Batería'
-                }
-                //console.log('Tipo = ' + tipo)
-                
-                var cod_distrito = row.Distrito.substring(0, 2)
-                var distrito = row.Distrito.slice(4)
-                switch(cod_distrito) {
-                    case '05':
-                        distrito = 'CHAMARTÍN'
-                        break
-                    case '06':
-                        distrito = 'TETUÁN'
-                        break
-                    case '07':
-                        distrito = 'CHAMBERÍ'
-                        break
-                    case '19':
-                        distrito = 'VICÁLVARO'
-                        break
-                    default:
+                    // Obtener el valor de 'Línea / Batería'
+                    const lineaBateriaValue = row[lineaBateriaKey];
+                    var tipo
+                    if(lineaBateriaValue === '') {
+                        tipo = 3
+                    } else if(lineaBateriaValue.startsWith('L')){
+                        tipo = 1
+                    } else {
+                        tipo = 2
+                    }
+                    //console.log('Tipo = ' + tipo)
 
-                }
-                //console.log('Distrito = ' + distrito)
-                
-                var cod_barrio = row.Barrio.substring(0,5)
-                var barrio = row.Barrio.slice(6)
-                switch(cod_barrio) {
-                    case '03-01':
-                        barrio = 'PACÍFICO'
-                        break
-                    case '03-05':
-                        barrio = 'JERÓNIMOS'
-                        break
-                    case '03-06':
-                        barrio = 'NIÑO JESÚS'
-                        break
-                    case '05-03':
-                        barrio = 'CIUDAD JARDÍN'
-                        break
-                    case '05-04':
-                        barrio = 'HISPANOAMÉRICA'
-                        break
-                    case '07-05':
-                        barrio = 'RÍOS ROSAS'
-                        break
-                    case '09-02':
-                        barrio = 'ARGÜELES'
-                        break
-                    case '09-05':
-                        barrio = 'VALDEMARÍN'
-                        break
-                    case '09-06':
-                        barrio = 'EL PLANTÍO'
-                        break
-                    case '10-01':
-                        barrio = 'CÁRMENES'
-                        break
-                    case '10-02':
-                        barrio = 'PUERTA DEL ÁNGEL'
-                        break
-                    case '10-07':
-                        barrio = 'ÁGUILAS'
-                        break
-                    case '11-02':
-                        barrio = 'OPAÑEL'
-                        break
-                    case '12-03':
-                        barrio = 'SAN FERMÍN'
-                        break
-                    case '12-05':
-                        barrio = 'MOSCARDÓ'
-                        break
-                    case '12-06':
-                        barrio = 'ZOFÍO'
-                        break
-                    case '13-01':
-                        barrio = 'ENTREVÍAS'
-                        break
-                    case '14-05':
-                        barrio = 'FONTARRÓN'
-                        break
-                    case '15-04':
-                        barrio = 'CONCEPCIÓN'
-                        break
-                    case '16-05':
-                        barrio = 'APÓSTOL SANTIAGO'
-                        break
-                    case '17-01':
-                        barrio = 'CASCO HISTÓRICO DE VILLAVERDE'
-                        break
-                    case '17-02':
-                        barrio = 'SAN CRISTÓBAL'
-                        break
-                    case '17-05':
-                        barrio = 'LOS ÁNGELES'
-                        break
-                    case '18-01':
-                        barrio = 'CASCO HISTÓRICO DE VALLECAS'
-                        break
-                    case '19-01':
-                        barrio = 'CASCO HISTÓRICO DE VICÁLVARO'
-                        break
-                    case '20-02':
-                        barrio = 'HELLÍN'
-                        break
-                    case '21-03':
-                        barrio = 'CASCO HISTÓRICO DE BARAJAS'
-                        break
-                    case '21-04':
-                        barrio = 'TIMÓN'
-                        break
+                    const lineaPlazasKey = Object.keys(row).find(key => key.endsWith('Plazas'))
+
+                    // Obtener el valor de 'Número de Plazas'
+                    const plazas = row[lineaPlazasKey];
+
+                    //console.log('Plazas = ' + plazas)
+
+                    //Como la Latitud y Longitud son cadenas de caracteres y 
+                    //vienen con , en lugar de . debo de cambiar el formato y hacer parseFloat
+                    var cadLat = row.Latitud.replace(',', '.')
+                    var latitude = parseFloat(cadLat)
+
+                    var cadLon = row.Longitud.replace(',', '.')
+                    var longitude = parseFloat(cadLon)
+
+                    var barrio = encontrarZona(latitude, longitude, barrios)
+
+                    if (plazas !== '' && barrio !== null) { // Verifica si no es una cadena vacía y si es un número válido
+                        await EstacionamientoModel.create({
+                            'lat': latitude,
+                            'lon': longitude,
+                            'barrioId': barrio.id,
+                            'coloreId': 6,
+                            'tipoEstacionamientoId': tipo,
+                            'plazas': parseInt(plazas) // Convierte el valor a un entero antes de insertarlo
+                        });
                     
-                    default:
+                        // Agregar una espera de 100 milisegundos entre cada iteración
+                        await new Promise(resolve => setTimeout(resolve, 10000));
+                    }
+                    // Incrementar el contador de lotes
+                    batchCount++;
 
-                }
-                //console.log('Barrio = ' + barrio)
-                
+                    // Si hemos alcanzado el tamaño del lote, hacemos una pausa
+                    if (batchCount === batchSize) {
+                        // Agregar una espera de 10 segundos entre lotes
+                        await new Promise(resolve => setTimeout(resolve, 40000));
 
-                const lineaPlazasKey = Object.keys(row).find(key => key.endsWith('Plazas'))
+                        // Reiniciar el contador de lotes
+                        batchCount = 0;
+                    }
 
-                // Obtener el valor de 'Número de Plazas'
-                const plazas = row[lineaPlazasKey];
-
-                //console.log('Plazas = ' + plazas)
-
-                //Como la Latitud y Longitud son cadenas de caracteres y 
-                //vienen con , en lugar de . debo de cambiar el formato y hacer parseFloat
-                var cadLat = row.Latitud.replace(',', '.')
-                var cadLon = row.Longitud.replace(',', '.')
-                
-                if (plazas !== '' && row.Barrio !== 'Sin Asignar' && row.Distrito !== 'Sin Asignar') { // Verifica si no es una cadena vacía y si es un número válido
-                    await EstacionamientoModel.create({
-                        'lat': parseFloat(cadLat),
-                        'lon': parseFloat(cadLon),
-                        'distrito': distrito,
-                        'barrio': barrio,
-                        'color': 'Negro',
-                        'tipo': tipo,
-                        'plazas': parseInt(plazas) // Convierte el valor a un entero antes de insertarlo
-                    });
-                
                     // Agregar una espera de 100 milisegundos entre cada iteración
                     await new Promise(resolve => setTimeout(resolve, 10000));
                 }
-                
             })
             .on('end', () => {
                 console.log('Procesamiento del CSV de estacionamientos MOTOS completo.');
@@ -589,6 +437,16 @@ export const leerCSV_motos = async(req, res) => {
 */
 export const leerCSV_carga = async(req, res) => {
     try {
+        var contadorFallos = 0
+        const barrios = await BarrioModel.findAll()
+
+        const estacionamientos = await EstacionamientoModel.findAll()
+        var encontrado
+        var i = 0
+
+        let batchCount = 0; // Contador de lotes
+        const batchSize = 50; // Tamaño del lote
+
         //Leemos csv de los estacionamientos de carga
         // Lectura del csv desde la web
         
@@ -606,149 +464,62 @@ export const leerCSV_carga = async(req, res) => {
         //fileStream.pipe(csvParser({ separator: ';' }))
 
             .on('data', async (row) => {
-                var tipo
-                if(row['Línea / Batería'] === '') {
-                    tipo = 'desconocido'
-                } else {
-                    tipo = row['Línea / Batería']
-                }
-
-                //console.log('Tipo = ' + tipo)
-                
-                var cod_distrito = row.Distrito.substring(0, 2)
-                var distrito = row.Distrito.slice(4)
-                switch(cod_distrito) {
-                    case '05':
-                        distrito = 'CHAMARTÍN'
-                        break
-                    case '06':
-                        distrito = 'TETUÁN'
-                        break
-                    case '07':
-                        distrito = 'CHAMBERÍ'
-                        break
-                    case '19':
-                        distrito = 'VICÁLVARO'
-                        break
-                    default:
-
-                }
-                //console.log('Distrito = ' + distrito)
-                
-                var cod_barrio = row.Barrio.substring(0,5)
-                var barrio = row.Barrio.slice(6)
-                switch(cod_barrio) {
-                    case '03-01':
-                        barrio = 'PACÍFICO'
-                        break
-                    case '03-05':
-                        barrio = 'JERÓNIMOS'
-                        break
-                    case '03-06':
-                        barrio = 'NIÑO JESÚS'
-                        break
-                    case '05-03':
-                        barrio = 'CIUDAD JARDÍN'
-                        break
-                    case '05-04':
-                        barrio = 'HISPANOAMÉRICA'
-                        break
-                    case '07-05':
-                        barrio = 'RÍOS ROSAS'
-                        break
-                    case '09-02':
-                        barrio = 'ARGÜELES'
-                        break
-                    case '09-05':
-                        barrio = 'VALDEMARÍN'
-                        break
-                    case '09-06':
-                        barrio = 'EL PLANTÍO'
-                        break
-                    case '10-01':
-                        barrio = 'CÁRMENES'
-                        break
-                    case '10-02':
-                        barrio = 'PUERTA DEL ÁNGEL'
-                        break
-                    case '10-07':
-                        barrio = 'ÁGUILAS'
-                        break
-                    case '11-02':
-                        barrio = 'OPAÑEL'
-                        break
-                    case '12-03':
-                        barrio = 'SAN FERMÍN'
-                        break
-                    case '12-05':
-                        barrio = 'MOSCARDÓ'
-                        break
-                    case '12-06':
-                        barrio = 'ZOFÍO'
-                        break
-                    case '13-01':
-                        barrio = 'ENTREVÍAS'
-                        break
-                    case '14-05':
-                        barrio = 'FONTARRÓN'
-                        break
-                    case '15-04':
-                        barrio = 'CONCEPCIÓN'
-                        break
-                    case '16-05':
-                        barrio = 'APÓSTOL SANTIAGO'
-                        break
-                    case '17-01':
-                        barrio = 'CASCO HISTÓRICO DE VILLAVERDE'
-                        break
-                    case '17-02':
-                        barrio = 'SAN CRISTÓBAL'
-                        break
-                    case '17-05':
-                        barrio = 'LOS ÁNGELES'
-                        break
-                    case '18-01':
-                        barrio = 'CASCO HISTÓRICO DE VALLECAS'
-                        break
-                    case '19-01':
-                        barrio = 'CASCO HISTÓRICO DE VICÁLVARO'
-                        break
-                    case '20-02':
-                        barrio = 'HELLÍN'
-                        break
-                    case '21-03':
-                        barrio = 'CASCO HISTÓRICO DE BARAJAS'
-                        break
-                    case '21-04':
-                        barrio = 'TIMÓN'
-                        break
+                i++
+                if(i > 0) {
+                    var tipo
+                    switch(row['Línea / Batería']) {
+                        case 'Línea':
+                            tipo = 1
+                            break
+                        case 'Batería':
+                            tipo = 2
+                            break
+                        default:
+                            tipo = 3
+                    }
+                    //console.log('Tipo = ' + tipo)
                     
-                    default:
+                    //Como la Latitud y Longitud son cadenas de caracteres y 
+                    //vienen con , en lugar de . debo de cambiar el formato y hacer parseFloat
+                    var cadLat = row.Latitud.replace(',', '.')
+                    var latitude = parseFloat(cadLat)
 
-                }
-                //console.log('Barrio = ' + barrio)
-                
-                //Como la Latitud y Longitud son cadenas de caracteres y 
-                //vienen con , en lugar de . debo de cambiar el formato y hacer parseFloat
-                var cadLat = row.Latitud.replace(',', '.')
-                var cadLon = row.Longitud.replace(',', '.')
+                    var cadLon = row.Longitud.replace(',', '.')
+                    var longitude = parseFloat(cadLon)
 
-                //console.log('Plazas = ' + row['Número de Plazas'])
-                
-                if (row.plazas !== '' && row.Barrio !== 'Sin Asignar' && row.Distrito !== 'Sin Asignar') { // Verifica si no es una cadena vacía y si es un número válido
-                    await EstacionamientoModel.create({
-                        'lat': parseFloat(cadLat),
-                        'lon': parseFloat(cadLon),
-                        'distrito': distrito,
-                        'barrio': barrio,
-                        'color': 'Morado',
-                        'tipo': tipo,
-                        'plazas': parseInt(row['Número de Plazas']) // Convierte el valor a un entero antes de insertarlo
-                    });
-                
+                    //console.log('Plazas = ' + row['Número de Plazas'])
+                    
+                    var barrio = encontrarZona(latitude, longitude, barrios)
+                    if (row.plazas !== '' && row.Barrio !== null) { // Verifica si no es una cadena vacía y si es un número válido
+                        await EstacionamientoModel.create({
+                            'lat':latitude,
+                            'lon': longitude,
+                            'barrioId': barrio.id,
+                            'coloreId': 7,
+                            'tipoEstacionamientoId': tipo,
+                            'plazas': parseInt(row['Número de Plazas']) // Convierte el valor a un entero antes de insertarlo
+                        });
+                    
+                        // Agregar una espera de 100 milisegundos entre cada iteración
+                        await new Promise(resolve => setTimeout(resolve, 10000));
+                    }
+
+                    // Incrementar el contador de lotes
+                    batchCount++;
+
+                    // Si hemos alcanzado el tamaño del lote, hacemos una pausa
+                    if (batchCount === batchSize) {
+                        // Agregar una espera de 10 segundos entre lotes
+                        await new Promise(resolve => setTimeout(resolve, 40000));
+
+                        // Reiniciar el contador de lotes
+                        batchCount = 0;
+                    }
+
                     // Agregar una espera de 100 milisegundos entre cada iteración
                     await new Promise(resolve => setTimeout(resolve, 10000));
                 }
+                
                 
             })
             .on('end', () => {
@@ -839,56 +610,80 @@ export const zonas = async(req, res) => {
     }
 }
 
+export async function estacionamientosAux(estacionamientosReq) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const estacionamientosId = estacionamientosReq.map(el => el.id)
+
+            const distritos = await DistritoModel.findAll({
+                include: [{
+                    model: BarrioModel,
+                    as: 'barrios',
+                    required: true,
+                    include: [{
+                        model: EstacionamientoModel,
+                        as: 'estacionamientos',
+                        where: {
+                            id: {
+                                [Op.in]: estacionamientosId
+                            }
+                        },
+                        required: true,
+                        include: [
+                            {
+                                model: Tipo_EstacionamientoModel,
+                                as: 'tipo_estacionamiento'
+                            },
+                            {
+                                model: ColorModel,
+                                as: 'colore'
+                            }
+                        ]
+                    }]
+                }]
+            })
+    
+            var estacionamientos = []
+            var barrios = []
+            distritos.forEach((distrito) => {
+                barrios = barrios.concat(distrito.barrios)
+                distrito.barrios.forEach((barrio) => {
+                    estacionamientos = estacionamientos.concat(barrio.estacionamientos)
+                })
+            })
+
+            resolve({ distritos, barrios, estacionamientos })
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
 //--------------------------------------------------------------------------------------------------//
-//BUSCAR POR DISTRITO
-export const buscarPorDistrito = async(req, res) => {
-    try {
-        const { distrito } = req.query
-
-        const estacionamientos = await EstacionamientoModel.findAll({
-            where: {
-                distrito: distrito
-            }
-        })
-
-        console.log(estacionamientos.length)
-        res.json(estacionamientos)
-    } catch (error) {
-        console.error('Error en la consulta buscarPorDistrito: ', error);
-        res.status(500).json({ message: ' Error en la consulta buscarPorDistrito' });
-    }
-}
-
-//BUSCAR POR BARRIO
-export const buscarPorBarrio = async(req, res) => {
-    try {
-        const { barrio } = req.query
-
-        const estacionamientos = await EstacionamientoModel.findAll({
-            where: {
-                barrio: barrio
-            }
-        })
-
-        res.json(estacionamientos)
-    } catch (error) {
-        console.error('Error en la consulta buscarPorBarrio: ', error);
-        res.status(500).json({ message: ' Error en la consulta buscarPorBarrio' });
-    }
-}
-
 //BUSCAR POR TIPO DE APARCAMIENTO
 export const buscarPorTipo = async(req, res) => {
     try {
         const { tipo } = req.query
 
-        const estacionamientos = await EstacionamientoModel.findAll({
+        const estacionamientosBD = await EstacionamientoModel.findAll({
+            include: [
+                { 
+                    model: Tipo_EstacionamientoModel, 
+                    as: 'tipo_estacionamiento' 
+                },
+                {
+                    model: ColorModel,
+                    as: 'colore'
+                }
+            ],
             where: {
-                tipo: tipo
+                '$tipo_estacionamiento.tipo_estacionamiento$': tipo
             }
         })
 
-        res.json(estacionamientos)
+        const { distritos, barrios, estacionamientos } = await estacionamientosAux(estacionamientosBD)
+
+        res.json({ distritos, barrios, estacionamientos })
     } catch (error) {
         console.error('Error en la consulta buscarPorTipo: ', error);
         res.status(500).json({ message: ' Error en la consulta buscarPorTipo' });
@@ -900,17 +695,58 @@ export const buscarPorColor = async(req, res) => {
     try {
         const { color } = req.query
 
-        const estacionamientos = await EstacionamientoModel.findAll({
+        const estacionamientosBD = await EstacionamientoModel.findAll({
+            include: [
+                { 
+                    model: ColorModel, 
+                    as: 'colore' 
+                },
+                {
+                    model: Tipo_EstacionamientoModel,
+                    as: 'tipo_estacionamiento'
+                }
+            ],
             where: {
-                color: color
+                '$colore.color$': color
             }
         })
 
-        console.log(estacionamientos.length)
-        res.json(estacionamientos)
+        const { distritos, barrios, estacionamientos } = await estacionamientosAux(estacionamientosBD)
+
+        res.json({ distritos, barrios, estacionamientos })
     } catch (error) {
         console.error('Error en la consulta buscarPorColor: ', error);
         res.status(500).json({ message: ' Error en la consulta buscarPorColor' });
     }
 }
 
+//BUSCAR POR TIPO Y COLOR
+export const buscarPorColorTipo = async (req, res) => {
+    try {
+        const { color, tipo } = req.query
+        
+        const estacionamientosBD = await EstacionamientoModel.findAll({
+            include: [
+                {
+                    model: ColorModel,
+                    as: 'colore'
+                },
+                {
+                    model: Tipo_EstacionamientoModel,
+                    as: 'tipo_estacionamiento'
+                }
+            ],
+            where: {
+                '$tipo_estacionamiento.tipo_estacionamiento$': tipo,
+                '$colore.color$': color
+            }
+        })
+
+        const { distritos, barrios, estacionamientos } = await estacionamientosAux(estacionamientosBD)
+
+        res.json({ distritos, barrios, estacionamientos })
+    } catch (error) {
+        console.error('Error en la consulta buscarPorColorTipo: ', error);
+        res.status(500).json({ message: ' Error en la consulta buscarPorColorTipo' });
+    }
+}

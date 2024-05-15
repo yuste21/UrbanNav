@@ -6,7 +6,7 @@ const LegendAccidentes = ({ zonaSelected, riesgoMedio }) => {
 
     return (
         <div className='legend'>
-            <h4>Leyenda</h4>
+            <h2>Leyenda</h2>
             <div className='info legend'>
                 <h3>Riesgo medio: {Math.round(riesgoMedio)}</h3>
                 <div className='mb-2'>
@@ -23,9 +23,9 @@ const LegendAccidentes = ({ zonaSelected, riesgoMedio }) => {
                 </div>
                 {zonaSelected && (
                     <div className='mt-2'>
-                        <p>Lesividad Media: {Math.round(zonaSelected.lesividad)} </p>
-                        <p>Total Accidentes: {zonaSelected.num_accidentes} </p>
-                        <p>Riesgo: {Math.round(zonaSelected.riesgo)} </p>
+                        <p>Lesividad Media: {(zonaSelected.lesividad_media).toFixed(2)} </p>
+                        <p>Total Accidentes: {zonaSelected.n_accidentes} </p>
+                        <p>Riesgo: {zonaSelected.riesgo} </p>
                     </div>
                 )}
             </div>

@@ -41,7 +41,7 @@ export const useForm = (initialForm, handleFilter, filtro) => {
     const handleSubmit = (event, markerPosition) => {
         event.preventDefault()
 
-        if(!form.accidente && !form.alcohol && !form.clima && !form.distrito && !form.drogas && !form.edad1 && 
+        if(!form.accidente && !form.alcohol && !form.clima && !form.drogas && !form.edad1 && 
             !form.edad2 && !form.fecha1 && !form.fecha2 && !form.hora1 && !form.hora2 && !form.lesion && 
             !form.sexo && !form.vehiculo && form.radio.distancia === 0) {
             alert('Datos incompletos')

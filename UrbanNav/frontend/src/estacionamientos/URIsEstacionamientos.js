@@ -6,5 +6,6 @@ export const URIsEstacionamientos = {
     distrito: `${baseUri}/distrito`,
     tipo: `${baseUri}/tipo`,
     color: `${baseUri}/color`,
+    color_tipo: `${baseUri}/color/tipo`,
     zonas: `${baseUri}/zonas`
 }

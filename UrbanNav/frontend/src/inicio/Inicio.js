@@ -3,7 +3,7 @@ const CompInicio = () => {
 
     return(
         <div>
-            <h1>Bienvenido a UrbanNav Madrid</h1>
+            <h1>Bienvenido a UrbanNav Madrid</h1> <br/>
         </div>
     )
 }

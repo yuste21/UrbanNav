@@ -1,32 +1,47 @@
+/* ---- VARIABLES ---- */
+:root {
+  --oscuro: rgb(3, 25, 38);
+  --oscuro-alpha: rgba(3, 25, 38, 0.5);
+  --claro: rgb(244, 249, 233);
+  --claro-alpha: rgba(244, 249, 233, 0.75);
+  --verde: rgb(68, 118, 4);
+  --verde-alpha: rgba(68, 118, 4, 0.75);
+  --verdeOscuro: rgb(3, 76, 60);
+  --verdeOscuro-aplha: rgba(3, 76, 60, 0.75);
+  --azulMarino: rgb(39, 93, 173);
+  --azulMarino-alpha: rgba(39, 93, 173, 0.85);
+  --azul: rgb(119, 152, 171);
+  --azul-aplha: rgba(119, 152, 171, 0.75);
+  --aquaMarina: rgb(63, 130, 109);
+  --rojo1: rgb(187, 10, 33);
+  --rojo1-alpha: rgba(187, 10, 33, 0.75);
+  --rojo2: rgb(140, 28, 19);
+  --rojo2-alpha: rgba(140, 28, 19, 0.75);
+  --rojo3: rgb(255, 71, 71);
+  --rojo3-alpha: rgba(255, 71, 71, 0.75);
+  --gris: rgb(209, 227, 221);
+  --grisAlpha: rgba(209, 227, 221, 0.75);
+  --genius: rgb(218, 255, 125);
+  --geniusAlpha: rgba(218, 255, 125, 0.75);
+  --amarillo: rgb(233, 196, 106);
+  --amarillo-alpha: rgba(233, 196, 106, 0.75);
+  --morado: rgb(136, 132, 216);
+  --morado-alpha: rgb(90, 84, 201);
+}
+
+/* ---- ESTILOS ---- */
+html, body {
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .App {
   text-align: center;
 }
 
-.legend {
-  line-height: 18px;
-  color: #555;
-}
-.legend i {
-  width: 18px;
-  height: 18px;
-  float: left;
-  margin-right: 8px;
-  opacity: 0.7;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-.map-container {
-  height: 200px;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.App-link {
+  color: #61dafb;
 }
 
 .App-header {
@@ -40,8 +55,136 @@
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+.btn-amarillo {
+  background-color: var(--amarillo) !important;
+  color: var(--oscuro) !important;
+  border-color: var(--amarillo) !important;
+}
+
+.btn-amarillo:hover {
+  background-color: var(--amarillo-alpha) !important;
+  border-color: var(--amarillo-alpha) !important;
+}
+
+.btn-azul {
+  background-color: var(--azulMarino) !important;
+  color: var(--claro) !important;
+  border-color: var(--azulMarino) !important;
+}
+
+.btn-azul:hover {
+  background-color: var(--azulMarino-alpha) !important;
+  border-color: var(--azulMarino-alpha) !important;
+}
+
+.btn-genius {
+  background-color: var(--verdeOscuro) !important;
+  color: var(--claro) !important;
+  border-color: var(--verdeOscuro) !important;
+}
+
+.btn-genius:hover {
+  background-color: var(--verdeOscuro-aplha) !important;
+  border-color: var(--verdeOscuro-aplha) !important;
+}
+
+.btn-morado {
+  background-color: var(--morado) !important;
+  color: var(--claro) !important;
+  border-color: var(--morado) !important;
+}
+
+.btn-morado:hover {
+  background-color: var(--morado-alpha) !important;
+  border-color: var(--morado-alpha) !important;
+}
+
+.btn-rojo {
+  background-color: var(--rojo1) !important;
+  color: var(--claro) !important;
+  border-color: var(--rojo1) !important;
+}
+
+.btn-rojo:hover {
+  background-color: var(--rojo1-alpha) !important;
+  border-color: var(--rojo1-alpha) !important;
+}
+
+.card {
+  background-color: #C1C8D7 !important;
+}
+
+.legend {
+  line-height: 18px;
+  color: #555;
+}
+
+.legend i {
+  width: 18px;
+  height: 18px;
+  float: left;
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+.link-custom,
+.link-custom .dropdown-toggle {
+  color: var(--oscuro) !important;
+  font-weight: bold;
+}
+
+.link-custom:hover,
+.link-custom .dropdown-toggle:hover {
+  color: var(--oscuro-alpha) !important;
+  transition: all 0.5s ease-out;
+}
+
+
+.map-container {
+  height: 200px;
+}
+
+/* NAV 1 */
+/* .navbar {
+  background: rgb(122,170,255);
+  background: linear-gradient(90deg, rgba(122,170,255,1) 27%, rgba(164,239,255,1) 100%);
+} */
+
+/* NAV 2 */
+.navbar {
+  background: rgb(193,163,192);
+  background: linear-gradient(90deg, rgba(193,163,192,1) 0%, rgba(136,132,216,1) 64%, rgba(147,95,167,1) 100%);
+}
+
+ .navbar .navbar-toggler {
+  border: none;
+}
+
+.navbar .navbar-toggler-icon {
+  background-image: url('data:image/svg+xml;charset=UTF8,%3Csvg viewBox=\'0 0 30 30\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath stroke=\'rgba(3, 25, 38, 1)\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-miterlimit=\'10\' d=\'M4 7h22M4 15h22M4 23h22\'/%3E%3C/svg%3E');
+  transition: all 0.5s ease-out;
+}
+
+.navbar .navbar-toggler-icon:hover {
+  background-image: url('data:image/svg+xml;charset=UTF8,%3Csvg viewBox=\'0 0 30 30\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath stroke=\'rgba(3, 25, 38, 0.5)\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-miterlimit=\'10\' d=\'M4 7h22M4 15h22M4 23h22\'/%3E%3C/svg%3E');
+  opacity: 0.75;
+}
+
+.padre {
+  min-height: 100% !important;
+  background: rgb(243,244,247);
+  background: linear-gradient(86deg, rgba(243,244,247,1) 0%, rgba(193,198,215,1) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
 }
 
 @keyframes App-logo-spin {

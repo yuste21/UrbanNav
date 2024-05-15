@@ -1,14 +1,16 @@
-import { getAllEstacionamientos, leerCSV_ser, leerCSV_reducida, leerCSV_motos, leerCSV_carga, 
-         buscarPorBarrio, buscarPorDistrito, buscarPorTipo, buscarPorColor, zonas } from "../controllers/EstacionamientoController.js";
+import {  getTipoEstacionamiento, getColor, getAllEstacionamientos,
+         leerCSV_ser, leerCSV_reducida, leerCSV_motos, leerCSV_carga, 
+         buscarPorTipo, buscarPorColor, buscarPorColorTipo, zonas } from "../controllers/EstacionamientoController.js";
 import { Router } from 'express'
 
 const routerEstacionamiento = Router()
 
 routerEstacionamiento.get('/', getAllEstacionamientos)
-routerEstacionamiento.get('/barrio', buscarPorBarrio)
-routerEstacionamiento.get('/distrito', buscarPorDistrito)
+routerEstacionamiento.get('/modelo/color', getColor)
+routerEstacionamiento.get('/modelo/tipoEstacionamiento', getTipoEstacionamiento)
 routerEstacionamiento.get('/tipo', buscarPorTipo)
 routerEstacionamiento.get('/color', buscarPorColor)
+routerEstacionamiento.get('/color/tipo', buscarPorColorTipo)
 routerEstacionamiento.post('/zonas', zonas)
 routerEstacionamiento.post('/ser', leerCSV_ser)
 routerEstacionamiento.post('/reducida', leerCSV_reducida)

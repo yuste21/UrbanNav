@@ -1,16 +1,33 @@
-import "./Modal.css"
+import { Modal, Button } from "react-bootstrap"
+import FormFlujo from "../trafico/FormFlujo"
+import { useEffect } from "react";
 
-const Modal = ({children, isOpen, closeModal}) => {
-    const handleContainerClick = (e) => e.stopPropagation()
 
+const ModalWindow = ({children, isOpen, closeModal, info}) => {
+    const { data, setLoading, entidad, tipo, idx } = info;
+    
     return(
-        <div className={`modal ${isOpen && "is-open"}`} onClick={closeModal}>
-            <div className="modal-container" onClick={handleContainerClick}>
-                <button className="modal-close" onClick={closeModal}>X</button>
+        <Modal show={isOpen[idx] === true} 
+               onHide={() => closeModal(idx)}
+               size="md"
+        >
+            <Modal.Header closeButton>
+                <Modal.Title>Información {data !== '' && `de ${data}`} </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
                 {children}
-            </div>
-        </div>
+            </Modal.Body>
+            <Modal.Footer className="d-flex justify-content-between align-items-center">
+                <FormFlujo setLoading={setLoading}
+                            entidad={entidad}
+                            tipo={tipo}
+                />
+                <Button variant="secondary" onClick={() => closeModal(idx) }>
+                    Close
+                </Button>
+            </Modal.Footer>
+        </Modal>
     )
 }
 
-export default Modal
+export default ModalWindow
