@@ -1,4 +1,4 @@
-import db from "../db.js";
+import db from "../../db.js";
 import { DataTypes } from 'sequelize'
 import { AccidenteModel } from "./AccidenteModel.js"
 import EstacionamientoModel from "./EstacionamientoModel.js";

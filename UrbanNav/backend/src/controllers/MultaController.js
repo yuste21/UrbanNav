@@ -8,7 +8,7 @@ import { UTMtoGPS } from "./AccidenteController.js";
 import { BarrioModel } from "../models/DistritoModel.js";
 import { RadarModel } from "../models/RadarModel.js"
 import { encontrarZona } from "./DistritoController.js";
-import db from "../db.js";
+import db from "../../db.js";
 
 export const getAllMultas = async(req, res) => {
     try {

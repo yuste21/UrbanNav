@@ -1,4 +1,4 @@
-import db from '../db.js'
+import db from '../../db.js'
 import { DataTypes, FLOAT } from 'sequelize'
 
 export const Calificacion_MultaModel = db.define('calificaciones', {

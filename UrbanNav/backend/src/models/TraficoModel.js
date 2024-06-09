@@ -1,4 +1,4 @@
-import db from '../db.js'
+import db from '../../db.js'
 import { DataTypes } from 'sequelize' 
 
 export const TraficoModel = db.define('aforos', {

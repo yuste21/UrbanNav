@@ -1,4 +1,4 @@
-import db from '../db.js'
+import db from '../../db.js'
 import { DataTypes } from 'sequelize' 
 
 export const EstacionamientoModel = db.define('estacionamientos', {
