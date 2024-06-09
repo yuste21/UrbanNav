@@ -1,6 +1,8 @@
-import { useCallback, useState, useMemo, useRef } from "react"
+import { useCallback, useState, useMemo, useRef, useEffect } from "react"
 import { useMap, Marker, Popup } from "react-leaflet"
 import { iconos } from "./markerIcons"
+import { handleChange, olvidar } from "./features/accidente/dataAccidenteSlice"
+import { useDispatch, useSelector } from "react-redux"
 
 export const center = [40.41688189428294, -3.703318510771146]
 export const zoom = 11
@@ -29,9 +31,22 @@ export function DisplayPosition({ map }) {
   )
 }
 
-export function DraggableMarker({ markerPosition, setMarkerPosition }) {
+export function DraggableMarker({ markerPosition, setMarkerPosition, filtro }) {
+  const dispatch = useDispatch()
   const [draggable, setDraggable] = useState(false)
-  const [position, setPosition] = useState(center)
+  const [position, setPosition] = useState(filtro.radio.recordar ? filtro.radio.posicion : center)
+  
+  useEffect(() => {
+    // if(filtro.radio.recordar) {
+    //   console.log('Recuerda = ' + filtro.radio.posicion)
+    //   setPosition(filtro.radio.posicion)
+    //   dispatch(olvidar())
+    //   setMarkerPosition(filtro.radio.posicion)
+    // } else {
+    dispatch(handleChange({ name: 'posicion', value: [markerPosition[0], markerPosition[1]] }))
+    //}
+  }, [position])
+
   const markerRef = useRef(null)
   const eventHandlers = useMemo(
     () => ({
@@ -42,6 +57,7 @@ export function DraggableMarker({ markerPosition, setMarkerPosition }) {
           const newPositionArray = [newPosition.lat, newPosition.lng]
           setPosition(newPosition)
           setMarkerPosition(newPositionArray)
+          dispatch(handleChange({ name: 'posicion', value: [markerPosition[0], markerPosition[1]] }))
           console.log('Posicion: ' + position + ' ' + markerPosition + ' ' + newPosition)
         }
       },

@@ -1,43 +1,108 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext, useDeferredValue } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap, Circle, LayersControl, LayerGroup } from 'react-leaflet';
-import { SetViewOnClick, DisplayPosition, DraggableMarker, zoom, center } from '../MapFunctions.js';
+import { SetViewOnClick, DisplayPosition, zoom, center, DraggableMarker } from '../MapFunctions.js';
 import LegendAccidentes from './LegendAccidentes.js';
 import Modal from '../modal/Modal.js';
 import { useModal } from '../modal/useModal.js';
-import { useForm } from './useFormAccidentes.js';
+import FormAccidentes from './FormAccidentes.js';
+import { Button, Offcanvas, OverlayTrigger, Popover } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import { initialFilter, asignarAccidentes } from '../features/accidente/dataAccidenteSlice.js';
 
-const MapAccidentes = ({distritos, 
-                        barrios, 
-                        riesgoDistrito,
-                        riesgoBarrio, 
-                        accidentes, 
-                        filtro, 
-                        markerPosition, 
-                        setMarkerPosition, 
-                        handleFilter,
+const fillBlueOptions = { fillColor: 'blue' }
+
+const MapAccidentes = ({handleFilter,
                         obtenerDatosGrafica,
                         zonaSeleccionada,
-                        setZonaSeleccionada,
-                        setLoading
+                        setZonaSeleccionada
                     }) => {
+
+    const accidentes = useSelector(state => state.accidentes.dataAccidentes.accidentes)
+    const distritos = useSelector(state => state.accidentes.dataAccidentes.distritos)
+    const riesgoDistrito = useSelector(state => state.accidentes.dataAccidentes.riesgoDistrito)
+    const barrios = useSelector(state => state.accidentes.dataAccidentes.barrios)
+    const riesgoBarrio = useSelector(state => state.accidentes.dataAccidentes.riesgoBarrio)
+    const dispatch = useDispatch()
+
+    //Filtro
+    const filtro = useSelector(state => state.accidentes.filtro)
+    const [showForm, setShowForm] = useState(false)
+    const handleClose = () => setShowForm(false);
+    const handleShow = () => setShowForm(true);
+    
+    //Mostrar filtro usado
+    const filtroString = (filtro) => {
+        let resultado = []
+        for(let key in filtro) {
+            if(filtro[key] && key !== 'filtrado') {
+                let valor
+                let clave
+                if(key !== 'radio' && key !== '') {   //Ignoro el atributo radio
+                    if(filtro[key] === '1') {
+                        clave = key + ': '
+                        valor = 'positivo'
+                    } else if(filtro[key] === '0') {
+                        clave = key + ': '
+                        valor = 'negativo'
+                    } else if(key === 'hora1' && filtro.hora2 === '') {
+                        clave = 'hora concreta: '
+                        valor = `${filtro.hora1.split(':')[0]}:${filtro.hora1.split(':')[1]} | ${filtro.hora2}`
+                    } else if(key === 'hora2') {
+                        clave = 'franja horaria: '
+                        valor = `${filtro.hora1} - ${filtro.hora2}`
+                    } else if(key === 'fecha1' && filtro.fecha2 === '') {
+                        clave = 'fecha concreta: '
+                        valor = filtro.fecha1 + ''
+                    } else if(key === 'fecha2') {
+                        clave = 'entre fechas: '
+                        valor = `desde el ${filtro.fecha1} hasta el ${filtro.fecha2}`
+                    } else if(key === 'hora1') {
+                        clave = ''
+                        valor = ''
+                    } else if(key === 'fecha1') {
+                        clave = ''
+                        valor = ''
+                    } else if (key === 'zonas' && filtro[key].activo === true) {
+                        clave = `${filtro[key].tipo} `
+                        valor = `${filtro[key].nombre}`
+                    } else if (key !== 'zonas') {
+                        clave = key + ': '
+                        valor = filtro[key] + ''
+                    } else {
+                        clave = ''
+                        valor = ''
+                    }
+                    resultado.push(clave + valor)
+                }
+            }
+        }
+
+        return resultado
+    }
+
+    const popover = (
+        <Popover id='popover'>
+            <Popover.Header as="h4">Filtro aplicado</Popover.Header>
+            <Popover.Body className='popover-body'>
+            {filtroString(filtro).map((el, index) => (
+                <p key={index}>{el}</p>
+            ))}
+            </Popover.Body>
+        </Popover>
+    );
 
     //Centrar Mapa (Display Position)
     const [map, setMap] = useState(null)
 
+    //Marker Position (Radio) | Draggable Marker
+    const [markerPosition, setMarkerPosition] = useState(filtro.radio.recordar ? filtro.radio.posicion : center)
+
+
     //MODAL
     const [isOpenModal, openModal, closeModal] = useModal(false)
 
-    //FILTRO INDIVIDUAL
-    const [showForm, setShowForm] = useState(false)
-    const { 
-        form,
-        setForm,
-        errors,
-        response,
-        handleChange,
-        handleSubmit,
-        vaciarFiltro } = useForm(filtro, handleFilter, filtro)
-
+    //Accidentes de una zona
+    const [accidentesPrev, setAccidentesPrev] = useState([])
 
     //ZONA SELECCIONADA (INFO EN LA LEYENDA)
     const [zonaClickeada, setZonaClickeada] = useState(false)
@@ -64,7 +129,7 @@ const MapAccidentes = ({distritos,
             obtenerDatosGrafica('tipo_accidente.tipo_accidente', 'Pie')
         }
         setZonaClickeada(!zonaClickeada)
-        setShowForm(!showForm)
+        //setShowForm(!showForm)
     }
 
     const handleMouseOut = (event, zona, riesgo) => {
@@ -94,36 +159,88 @@ const MapAccidentes = ({distritos,
     }, [barrios, distritos])
 
     const handleOverlayChange = (selectedOverlay) => {
-        setActivateOverlay(activateOverlay === selectedOverlay ? '' : selectedOverlay)
-    };
-
-
-    const fillBlueOptions = { fillColor: 'blue' }
+        var aux = activateOverlay.split(' ')
+        if(activateOverlay.includes(selectedOverlay)) {     //Desactivo checkbox
+            var filtrado = aux.filter(el => el !== selectedOverlay && el !== '')
+            setActivateOverlay(filtrado.length > 0 ? filtrado[0] : '')
+        } else {  //Activamos el checkbox selectedOverlay
+            
+            if(selectedOverlay === 'Accidentes') {  //Si selected es Accidentes no tengo que desactivar ningun checkbox
+                setActivateOverlay(activateOverlay + ' ' + selectedOverlay)
+            } else {    //En caso de que haya algun checkbox activado que no sea Accidentes lo desactivo
+            var filtrado = aux.filter(el => el === 'Accidentes')
+            var filtradoString = filtrado.length > 0 ? `${filtrado[0]}` : ''
+            setActivateOverlay(filtradoString + ' ' + selectedOverlay)
+            }
+        }    };
 
     return(
         <> 
             <div className='row'>
+                {showForm && 
+                    <div className='col-md-12 col-lg-3 mt-3'>
+                        <h3>Accidentes: {accidentes.length}</h3>
+                        {/*LEYENDA*/}
+                        {activateOverlay === 'Distritos' ?
+                            <LegendAccidentes zonaSelected={zonaSeleccionada}
+                                            riesgoMedio={riesgoDistrito}
+                            /> 
+                            :
+                            activateOverlay === 'Barrios' ?
+                            <LegendAccidentes zonaSelected={zonaSeleccionada}
+                                            riesgoMedio={riesgoBarrio}
+                            />
+                            : <></>}
+                    </div>
+                }
                 <div className='col-md-12 col-lg-9'>
                     {/*MAPA + MARKER + POLYGON*/}
                     <div className='card m-3'>
                         <div className='card-body'>
                             { map ? <DisplayPosition map={map} /> : null }
-                            {distritos.length > 0 && barrios.length > 0 &&
+                            {filtro.zonas.activo &&
+                            <button className='btn btn-azul mb-3'
+                                    onClick={() => {
+                                        dispatch(asignarAccidentes({ accidentes: accidentesPrev, tipo: 'previos', nombre: '' }))
+                                    }}
+                            >
+                                Volver a mostrar {filtro.zonas.tipo}s
+                            </button>
+                            }
+                            {distritos.length > 0 && barrios.length > 0 && !filtro.zonas.activo &&
                                 <>
-                                    <label className='me-2' htmlFor='distrito'>Mostrar distritos</label>
-                                    <input type='checkbox'
-                                        id='distrito'
-                                        className='me-4'
-                                        checked={activateOverlay === 'Distritos'}
-                                        onClick={() => handleOverlayChange('Distritos')}       
-                                    /> 
-                                    <label className='me-2' htmlFor='barrio'>Mostrar barrios</label>
-                                    <input type='checkbox'
-                                        id='barrio'
-                                        checked={activateOverlay === 'Barrios'}
-                                        onClick={() => handleOverlayChange('Barrios')}       
+                                    <label className="me-2" htmlFor="distrito">Distritos</label>
+                                    <input
+                                        type="checkbox"
+                                        id="distrito"
+                                        className="me-4"
+                                        checked={activateOverlay.includes("Distritos")}
+                                        onChange={() => handleOverlayChange('Distritos')}
                                     />
-                                </>
+                              
+                                    <label className="me-2" htmlFor="barrio">Barrios</label>
+                                    <input
+                                        type="checkbox"
+                                        id="barrio"
+                                        className="me-4"
+                                        checked={activateOverlay.includes("Barrios")}
+                                        onChange={() => handleOverlayChange('Barrios')}
+                                    />
+
+                                    {accidentes.length < 500 &&
+                                    <>
+                                        <label className="me-2" htmlFor="barrio">Accidentes</label>
+                                        <input
+                                            type="checkbox"
+                                            id="barrio"
+                                            className="me-4"
+                                            checked={activateOverlay.includes("Accidentes")}
+                                            onChange={() => handleOverlayChange('Accidentes')}
+                                        />
+                                    </>
+                                    }
+                              </>
+                              
                             }
                             <MapContainer center={center} 
                                             zoom={zoom} 
@@ -135,7 +252,7 @@ const MapAccidentes = ({distritos,
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                 />
-                                {distritos && distritos.length > 0 && activateOverlay === 'Distritos' && distritos.map((distrito, index) => (
+                                {distritos !== undefined && distritos.length > 0 && activateOverlay.includes('Distritos') && !filtro.zonas.activo && distritos.map((distrito, index) => (
                                     <Polygon key={distrito.id}
                                             eventHandlers={{
                                                 mouseout: (event) => handleMouseOut(event, distrito, riesgoDistrito),
@@ -151,6 +268,17 @@ const MapAccidentes = ({distritos,
                                             positions={distrito.delimitaciones}
                                     >
                                         <Popup>
+                                            {distrito.n_accidentes < 100 &&
+                                                <button className='btn'
+                                                        onClick={() => {
+                                                            setAccidentesPrev(accidentes)
+                                                            setZonaClickeada(null)
+                                                            dispatch(asignarAccidentes({ accidentes: distrito, tipo: 'distrito', nombre: distrito.nombre }))
+                                                    }}
+                                                >
+                                                    Ver accidentes de este distrito
+                                                </button>
+                                            }
                                             <button onClick={() => openModal(distrito.id)}
                                                     className='btn'
                                             >
@@ -158,18 +286,19 @@ const MapAccidentes = ({distritos,
                                             </button>
                                             <Modal isOpen={isOpenModal}
                                                    closeModal={closeModal}
-                                                   info={{ data: 'Accidentes', setLoading, entidad: distrito, tipo: 'accidente distrito', idx: (distrito.id) }}
+                                                   info={{ data: 'Accidentes', entidad: distrito, tipo: 'accidente distrito', idx: (distrito.id) }}
                                             >
                                                 <p style={{ fontWeight: 'bold' }}>
                                                     Nombre: {distrito.nombre} <br/>
                                                     Lesividad media: {distrito.lesividad_media} <br/>
+                                                    Riesgo: {distrito.riesgo} <br/>
                                                     {distrito.n_accidentes} accidentes
                                                 </p>
                                             </Modal>
                                         </Popup>
                                     </Polygon>
                                 ))}
-                                {barrios && barrios.length > 0 && activateOverlay === 'Barrios' && barrios.map((barrio, index) => (
+                                {barrios !== undefined && barrios.length > 0 && activateOverlay.includes('Barrios') && !filtro.zonas.activo && barrios.map((barrio, index) => (
                                     <Polygon key={index}
                                             eventHandlers={{
                                                 mouseout: (event) => handleMouseOut(event, barrio, riesgoBarrio),
@@ -184,12 +313,39 @@ const MapAccidentes = ({distritos,
                                             }}
                                             positions={barrio.delimitaciones}
                                     >
-
+                                        <Popup>
+                                            {barrio.accidentes.length < 100 &&
+                                                <button className='btn'
+                                                        onClick={() => {
+                                                            setAccidentesPrev(accidentes)
+                                                            setZonaClickeada(null)
+                                                            dispatch(asignarAccidentes({ accidentes: barrio.accidentes, tipo: 'barrio', nombre: barrio.nombre }))
+                                                    }}
+                                                >
+                                                    Ver accidentes de este barrio
+                                                </button>
+                                            }
+                                            <button onClick={() => openModal(barrio.id)}
+                                                    className='btn'
+                                            >
+                                                Ver más información
+                                            </button>
+                                            <Modal isOpen={isOpenModal}
+                                                   closeModal={closeModal}
+                                                   info={{ data: 'Accidentes', entidad: barrio, tipo: 'accidente barrio', idx: (barrio.id) }}
+                                            >
+                                                <p style={{ fontWeight: 'bold' }}>
+                                                    Nombre: {barrio.nombre} <br/>
+                                                    Lesividad media: {barrio.lesividad_media} <br/>
+                                                    Riesgo: {barrio.riesgo} <br/>
+                                                    {barrio.n_accidentes} accidentes
+                                                </p>
+                                            </Modal>
+                                        </Popup>
                                     </Polygon>
                                 ))}
-                                {accidentes && accidentes.length > 0 && activateOverlay === 'Markers' && accidentes.map((accidente, index) => {
+                                {accidentes !== undefined && accidentes.length > 0 && (activateOverlay.includes('Accidentes') || filtro.zonas.activo) && accidentes.map((accidente, index) => {
                                     var otros = accidentes.filter(el => el.lat === accidente.lat && el.lon === accidente.lon && el.fecha === accidente.fecha && el.hora === accidente.hora && el.id !== accidente.id)
-
                                     return (
                                         <Marker key={index} position={[accidente.lat, accidente.lon]}>
                                             <Popup>
@@ -200,7 +356,7 @@ const MapAccidentes = ({distritos,
                                                 </button>
                                                 <Modal isOpen={isOpenModal} 
                                                     closeModal={closeModal} 
-                                                    info={{ data: 'Accidente', tipo: 'accidente', idx: index}}
+                                                    info={{ data: 'Accidente Marker', tipo: 'accidente', idx: index}}
                                                 >
                                                     <p style={{fontWeight: 'bold'}}>
                                                         Fecha: {accidente.fecha} <br/>
@@ -239,26 +395,55 @@ const MapAccidentes = ({distritos,
                                     )
                                 })}
                                 
-                                { Object.keys(filtro).length > 0 && filtro.radio && filtro.radio.activo && <Circle center={markerPosition} pathOptions={fillBlueOptions} radius={(filtro.radio.distancia)} /> }
+                                { filtro !== initialFilter && filtro.radio && filtro.radio.activo && <Circle center={markerPosition} pathOptions={fillBlueOptions} radius={(filtro.radio.distancia)} /> }
 
-                                { Object.keys(filtro).length > 0 && filtro.radio && filtro.radio.activo && <DraggableMarker markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} /> }
+                                { filtro !== initialFilter > 0 && filtro.radio && filtro.radio.activo && <DraggableMarker markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} filtro={filtro} /> }
+                                
                             </MapContainer>
                         </div>
                     </div>
                 </div>
                 <div className='col-md-12 col-lg-3 mt-3'>
-                    <h3>Accidentes: {accidentes.length}</h3>
-                    {/*LEYENDA*/}
-                    {activateOverlay === 'Distritos' ?
-                        <LegendAccidentes zonaSelected={zonaSeleccionada}
-                                        riesgoMedio={riesgoDistrito}
-                        /> 
-                        :
-                        activateOverlay === 'Barrios' ?
-                        <LegendAccidentes zonaSelected={zonaSeleccionada}
-                                        riesgoMedio={riesgoBarrio}
-                        />
-                        : <></>}
+                    {/* FILTRO */}
+                    {!showForm &&
+                        <button className="btn" onClick={handleShow}>
+                            <i class="bi bi-filter"></i>
+                        </button>
+                    }
+                    <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }}>
+                        <Offcanvas.Body>
+                            <FormAccidentes handleFilter={handleFilter}
+                                            handleClose={handleClose}
+                            />
+                        </Offcanvas.Body>
+                    </Offcanvas>
+                    {!showForm &&
+                        <>
+                            <h3>Accidentes: {accidentes.length}</h3>
+                            {filtro.filtrado &&
+                                <div className='row'>
+                                    <OverlayTrigger
+                                        placement="bottom"
+                                        trigger='click'
+                                        overlay={popover}
+                                    >
+                                        <button className='btn'>Mostrar Filtrado</button>
+                                    </OverlayTrigger>
+                                </div>
+                            }
+                            {/*LEYENDA*/}
+                            {activateOverlay.includes('Distritos') && !filtro.zonas.activo ?
+                                <LegendAccidentes zonaSelected={zonaSeleccionada}
+                                                riesgoMedio={riesgoDistrito}
+                                /> 
+                                :
+                                activateOverlay.includes('Barrios') && !filtro.zonas.activo ?
+                                <LegendAccidentes zonaSelected={zonaSeleccionada}
+                                                riesgoMedio={riesgoBarrio}
+                                />
+                                : <></>}
+                        </>
+                    }
                 </div>
             </div>
         </>

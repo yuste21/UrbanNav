@@ -1,11 +1,15 @@
 import { Modal, Button } from "react-bootstrap"
-import FormFlujo from "../trafico/FormFlujo"
+import FormFlujo from "../charts/FormFlujo"
 import { useEffect } from "react";
 
 
 const ModalWindow = ({children, isOpen, closeModal, info}) => {
-    const { data, setLoading, entidad, tipo, idx } = info;
+    const { data, entidad, tipo, idx } = info;
     
+    useEffect(() => {
+        console.log('idx = ' + idx)
+    }, [idx])
+
     return(
         <Modal show={isOpen[idx] === true} 
                onHide={() => closeModal(idx)}
@@ -18,12 +22,14 @@ const ModalWindow = ({children, isOpen, closeModal, info}) => {
                 {children}
             </Modal.Body>
             <Modal.Footer className="d-flex justify-content-between align-items-center">
-                <FormFlujo setLoading={setLoading}
-                            entidad={entidad}
-                            tipo={tipo}
-                />
+                {(data !== 'Accidente Marker') &&
+                    <FormFlujo entidad={entidad}
+                               tipo={tipo}
+                    />
+                }
+                
                 <Button variant="secondary" onClick={() => closeModal(idx) }>
-                    Close
+                    Cerrar
                 </Button>
             </Modal.Footer>
         </Modal>

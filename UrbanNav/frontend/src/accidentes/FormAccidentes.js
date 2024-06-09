@@ -1,116 +1,118 @@
-import { useEffect, useState } from "react"
-import { Form, Col } from 'react-bootstrap';
+import { useContext, useEffect, useState } from "react"
+import { Form, Col, Button } from 'react-bootstrap';
 import { useForm } from "./useFormAccidentes.js"
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import { useDispatch, useSelector } from "react-redux";
+import { handleChange, initialFilter, vaciarFiltro, activarFiltro, getDataAccidentesInicio } from "../features/accidente/dataAccidenteSlice.js";
+import { store } from "../app/store.js";
 
-const initialForm = {
-    fecha1: '',
-    fecha2: '',
-    hora1: '',
-    hora2: '',
-    edad1: '',
-    edad2: '',
-    vehiculo: '',
-    drogas: '',
-    alcohol: '',
-    lesion: '',
-    sexo: '',
-    accidente: '',
-    clima: '',
-    radio: {
-        activo: false,
-        distancia: 0,
-        lat: 0,
-        lon: 0
-    },
-    zona: []
-}
+const FormAccidentes = ({ handleFilter, handleClose }) => {
+    const dispatch = useDispatch()
+    const filtro = useSelector(state => state.accidentes.filtro)
 
+    const handleSubmit = (event) => {
+        event.preventDefault()
 
-const FormAccidentes = ({ handleFilter, markerPosition, filtro }) => {
+        if(!filtro.accidente && !filtro.alcohol && !filtro.clima && !filtro.drogas && !filtro.edad1 && 
+            !filtro.edad2 && !filtro.fecha1 && !filtro.fecha2 && !filtro.hora1 && !filtro.hora2 && !filtro.lesion && 
+            !filtro.sexo && !filtro.vehiculo && filtro.radio.distancia === 0) {
+            alert('Datos incompletos')
+            return;
+        }
 
-    const { 
-        form,
-        setForm,
-        errors,
-        response,
-        handleChange,
-        handleSubmit,
-        vaciarFiltro } = useForm(initialForm, handleFilter, filtro)
+        dispatch(activarFiltro())
 
+        handleFilter(filtro)
+    }
+
+    // IMPLEMENTAR THUNK
+    // const limpiarFiltro = () => {
+    //     dispatch(vaciarFiltro())
+    //     store.dispatch(handleFilter())
+    // }
+
+    const limpiarFiltro = () => {
+        dispatch(vaciarFiltro())    //Limpiar filtro
+        dispatch(getDataAccidentesInicio())     //cargaInicial
+    }
 
     return(
         <div className='card'>
-            <div className='card-title'>
-                <h3>Filtrar por: </h3> <br/>
+            <div className="card-title">
+                <div className="button-container">
+                    <button onClick={handleClose} className="btn">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
             </div>
             <div className='card-body'> 
-                <Form onSubmit={(event) => handleSubmit(event, markerPosition)}>
+                <Form onSubmit={(event) => handleSubmit(event)}>
                     <div className="row">
-                            {!form.radio.activo ? 
+                            {!filtro.radio.activo ? 
                                 <button className="btn btn-azul mb-3 me-4" 
                                         type="button" 
                                         name="activo"
-                                        onClick={handleChange} 
+                                        onClick={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
                                 >Mostrar marcador arrastrable</button>
                             :
                             <>
                                 <input className="mb-3"
                                        type="number"
-                                       value={form.radio.distancia}
-                                       disabled="true"
+                                       value={filtro.radio.distancia}
+                                       disabled={true}
                                        style={{ width: '90px' }}
                                 />
                                 <Form.Group as={Col}>
-                                    <Form.Label>Selecciona un radio en metros</Form.Label>
-                                    <Form.Range value={form.radio.distancia}
-                                                onChange={handleChange}
+                                    <Form.Label htmlFor="radio">Selecciona un radio en metros</Form.Label>
+                                    <Form.Range value={filtro.radio.distancia}
+                                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                                                 id="radio"
                                                 name="distancia"
                                                 min={0}
-                                                max={38000}
+                                                max={20500}
                                                 step={100}
                                     />
                                 </Form.Group>
                                 <button className="btn btn-rojo mb-3 me-4"
                                         type="button"
                                         name="inactivo"
-                                        onClick={handleChange}
+                                        onClick={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                                 >Ocultar marcador arrastrable</button>
                             </>
                             }
                     </div>
                     <div className="row mb-4">
                         <Form.Group as={Col} sm={12} md={6}
-                                    controlId="alcohol" 
                                     className="d-flex align-items-center mb-sm-2 mb-md-2 mb-2"
                         >
-                            <Form.Label className="fw-bold me-2">Alcohol</Form.Label>
+                            <Form.Label className="fw-bold me-2" htmlFor="alcohol">Alcohol</Form.Label>
                             <Form.Control as="select" 
-                                        className="form-select" 
+                                        className="filtro-select" 
                                         style={{ width: '180px' }}
-                                        value={form.alcohol} 
-                                        name="alcohol" 
-                                        onChange={handleChange}
+                                        id="alcohol"
+                                        name="alcohol"
+                                        value={filtro.alcohol} 
+                                        onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                             >
-                                    <option value="">Ninguno</option>
+                                    <option value="">Sin especificar</option>
                                     <option value="1">Positivo</option>
                                     <option value="0">Negativo</option>
                                 </Form.Control>
                         </Form.Group>
 
                         <Form.Group as={Col} sm={12} md={6}
-                                    controlId="drogas" 
                                     className="d-flex align-items-center"
                         >
-                            <Form.Label className="fw-bold me-2">Drogas</Form.Label>
+                            <Form.Label className="fw-bold me-2" htmlFor="drogas">Drogas</Form.Label>
                             <Form.Control as="select" 
-                                          className="form-select" 
+                                          className="filtro-select" 
                                           style={{ width: '180px' }}
-                                          value={form.drogas} 
-                                          name="drogas" 
-                                          onChange={handleChange}
+                                          id="drogas"
+                                          name="drogas"
+                                          value={filtro.drogas} 
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                             >
-                                <option value="">Ninguno</option>
+                                <option value="">Sin especificar</option>
                                 <option value="1">Positivo</option>
                                 <option value="0">Negativo</option>
                             </Form.Control>
@@ -118,56 +120,56 @@ const FormAccidentes = ({ handleFilter, markerPosition, filtro }) => {
                     </div>
                     <div className="row mb-3">
                         <Form.Group as={Col} sm={12} md={6}
-                                    controlId="vehiculo" 
                                     className="d-flex align-items-center mb-sm-2 mb-md-2 mb-2"
                         >
-                            <Form.Label className="fw-bold me-2">Vehiculo</Form.Label>
+                            <Form.Label className="fw-bold me-2" htmlFor="vehiculo">Vehiculo</Form.Label>
                             <Form.Control as="select" 
-                                          className="form-select" 
+                                          className="filtro-select" 
                                           style={{ width: '180px' }}
-                                          value={form.vehiculo} 
-                                          name="vehiculo" 
-                                          onChange={handleChange}
+                                          id="vehiculo"
+                                          name="vehiculo"
+                                          value={filtro.vehiculo} 
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                             >
-                                <option value="">Ninguno</option>
-                                <option value="Todo terreno">Todo terreno</option>
-                                <option value="Turismo">Turismo</option>
-                                <option value="hasta">Motocicleta hasta 125cc</option>
-                                <option value="Furgoneta">Furgoneta</option>
-                                <option value="articulado">Vehículo articulado</option>
-                                <option value="Autobus">Autobús</option>
-                                <option value="Camion">Camión rígido</option>
-                                <option value="Ciclomotor">Ciclomotor</option>
-                                <option value="Tractocamion">Tractocamión</option>
-                                <option value=">">Motocicleta mas de 125cc</option>
-                                <option value="Bicicleta">Bicicleta</option>
-                                <option value="Otros">Otros vehiculos con motor</option>
-                                <option value="EPAC">Bicicleta EPAC</option>
-                                <option value="obras">Maquinaria de obras</option>
-                                <option value="vmu">VMU electrico</option>
+                                <option value="">Sin especificar</option>
+                                <option value="todo terreno">Todo terreno</option>
+                                <option value="turismo">Turismo</option>
+                                <option value="motocicleta hasta 125cc">Motocicleta hasta 125cc</option>
+                                <option value="furgoneta">Furgoneta</option>
+                                <option value="vehículo articulado">Vehículo articulado</option>
+                                <option value="autobús">Autobús</option>
+                                <option value="camión rígido">Camión rígido</option>
+                                <option value="ciclomotor">Ciclomotor</option>
+                                <option value="tractocamión">Tractocamión</option>
+                                <option value="motocicleta más de 125cc">Motocicleta mas de 125cc</option>
+                                <option value="bicicleta">Bicicleta</option>
+                                <option value="otros vehículos con motor">Otros vehiculos con motor</option>
+                                <option value="bicicleta EPAC">Bicicleta EPAC</option>
+                                <option value="maquinaria de obras">Maquinaria de obras</option>
+                                <option value="VMU eléctrico">VMU electrico</option>
                             </Form.Control>
                         </Form.Group>
                         
                         <Form.Group as={Col} sm={12} md={6}
-                                    controlId="accidente" 
                                     className="d-flex align-items-center"
                         >
-                            <Form.Label className="fw-bold me-2">Accidente</Form.Label>
+                            <Form.Label className="fw-bold me-2" htmlFor="accidente">Accidente</Form.Label>
                             <Form.Control as="select" 
-                                          className="form-select" 
+                                          className="filtro-select" 
                                           style={{ width: '180px' }}
-                                          value={form.accidente} 
-                                          name="accidente" 
-                                          onChange={handleChange}
+                                          id="accidente"
+                                          name="accidente"
+                                          value={filtro.accidente}
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                             >
-                                <option value="">Ninguno</option>
-                                <option value="doble">Colisión doble</option>
-                                <option value="multiple">Colisión múltiple</option>
+                                <option value="">Sin especificar</option>
+                                <option value="colisión doble">Colisión doble</option>
+                                <option value="colisión multiple">Colisión múltiple</option>
                                 <option value="alcance">Alcance</option>
-                                <option value="obstaculo">Choque contra obstáculo fijo</option>
-                                <option value="persona">Atropello a persona</option>
+                                <option value="choque contra obstáculo fijo">Choque contra obstáculo fijo</option>
+                                <option value="atropello a persona">Atropello a persona</option>
                                 <option value="vuelco">Vuelco</option>
-                                <option value="caida">Caída</option>
+                                <option value="caída">Caída</option>
                                 <option value="otro">Otro</option>
                             </Form.Control>
                         </Form.Group>
@@ -175,36 +177,47 @@ const FormAccidentes = ({ handleFilter, markerPosition, filtro }) => {
                     <div className="row mb-3">
                         <Col className="d-flex align-items-center">
                             <Form.Label className='me-4 fw-bold'>Gravedad de la lesión:</Form.Label>
-                            <Form.Check inline className="form-check-inline">
+                            <Form.Check inline className="filtro-check-inline">
                                 <Form.Check.Input 
                                     type="radio" 
-                                    value="LEVE" 
-                                    id="leve"
+                                    id="cualquiera"
+                                    value="" 
                                     name="lesion"
-                                    checked={form.lesion === 'LEVE'} 
-                                    onChange={handleChange} 
+                                    checked={filtro.lesion === ''} 
+                                    onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
+                                />
+                                <Form.Check.Label htmlFor="cualquiera">Cualquiera</Form.Check.Label>
+                            </Form.Check>
+                            <Form.Check inline className="filtro-check-inline">
+                                <Form.Check.Input 
+                                    type="radio" 
+                                    id="leve"
+                                    value="Leve" 
+                                    name="lesion"
+                                    checked={filtro.lesion === 'Leve'} 
+                                    onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
                                 />
                                 <Form.Check.Label htmlFor="leve">Leve</Form.Check.Label>
                             </Form.Check>
-                            <Form.Check inline className="form-check-inline">
+                            <Form.Check inline className="filtro-check-inline">
                                 <Form.Check.Input 
                                     type="radio" 
-                                    value="GRAVE" 
                                     id="grave"
+                                    value="Grave" 
                                     name="lesion"
-                                    checked={form.lesion === 'GRAVE'} 
-                                    onChange={handleChange} 
+                                    checked={filtro.lesion === 'Grave'} 
+                                    onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
                                 />
                                 <Form.Check.Label htmlFor="grave">Grave</Form.Check.Label>
                             </Form.Check>
-                            <Form.Check inline className="form-check-inline">
+                            <Form.Check inline className="filtro-check-inline">
                                 <Form.Check.Input 
                                     type="radio" 
-                                    value="FALLECIDO" 
                                     id="fallecido"
+                                    value="Fallecido" 
                                     name="lesion"
-                                    checked={form.lesion === 'FALLECIDO'} 
-                                    onChange={handleChange} 
+                                    checked={filtro.lesion === 'Fallecido'} 
+                                    onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
                                 />
                                 <Form.Check.Label htmlFor="fallecido">Fallecido</Form.Check.Label>
                             </Form.Check>
@@ -212,44 +225,66 @@ const FormAccidentes = ({ handleFilter, markerPosition, filtro }) => {
                     </div>
                     <div className="row mb-3">  
                         <Form.Group as={Col} sm={12} md={6}
-                                    controlId="sexo" 
                                     className="d-flex align-items-center mb-sm-2 mb-md-2 mb-2"
                         >
                             <Form.Label className="fw-bold me-2" htmlFor="sexo">Sexo</Form.Label>
                             <Form.Control as="select" 
-                                          className="form-select" 
+                                          className="filtro-select" 
                                           style={{ width: '180px' }}
-                                          value={form.sexo} 
                                           id="sexo"
-                                          name="sexo" 
-                                          onChange={handleChange}
+                                          name="sexo"
+                                          value={filtro.sexo} 
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                             >
-                                <option value="">Ninguno</option>
+                                <option value="">Sin especificar</option>
                                 <option value="hombre">Hombre</option>
                                 <option value="mujer">Mujer</option>
                             </Form.Control>
                         </Form.Group>
 
                         <Form.Group as={Col} xs={6} sm={6} md={6} lg={6} xl={6}
-                                    controlId="clima" 
                                     className="d-flex align-items-center"
                         >
                             <Form.Label className="fw-bold me-2" htmlFor="clima">Clima</Form.Label>
                             <Form.Control as="select" 
-                                          className='form-select' 
+                                          className='filtro-select' 
                                           style={{ width: '180px' }} 
-                                          value={form.clima} 
-                                          id="clima" 
-                                          name="clima" 
-                                          onChange={handleChange}
+                                          id="clima"
+                                          name="clima"
+                                          value={filtro.clima} 
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                             >
-                                    <option value="">Ninguno</option>
+                                    <option value="">Sin especificar</option>
                                     <option value="Despejado">Despejado</option>
                                     <option value="Nublado">Nublado</option>
-                                    <option value="debil">Lluvia débil</option>
-                                    <option value="intensa">Lluvia intensa</option>
+                                    <option value="Lluvia débil">Lluvia débil</option>
+                                    <option value="Lluvia intensa">Lluvia intensa</option>
                                     <option value="Granizando">Granizando</option>
                             </Form.Control>
+                        </Form.Group>
+                    </div>
+                    <div className="row mb-3">
+                        <Form.Group as={Col}
+                                    className="d-flex align-items-center"
+                        >
+                            <Form.Label className="fw-bold me-2" htmlFor="edad1">Rango edad</Form.Label>
+                            <Form.Control type="number"
+                                          min="0"
+                                          max="74"
+                                          id="edad1"
+                                          name="edad1"
+                                          className="me-2"
+                                          value={filtro.edad1}
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                            />
+                            <Form.Control type="number"
+                                          min="0"
+                                          max="74"
+                                          className="me-2"
+                                          name="edad2"
+                                          value={filtro.edad2}
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                            />
                         </Form.Group>
                     </div>
                     <div className="row mb-3">
@@ -258,25 +293,25 @@ const FormAccidentes = ({ handleFilter, markerPosition, filtro }) => {
                             <Form.Control 
                                 type="time" 
                                 className='me-4' 
-                                value={form.hora1} 
+                                value={filtro.hora1} 
                                 id="horaConcreta"
                                 name="hora1"
-                                onChange={handleChange}/>
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}/>
                         </Col>
                         <Col className="d-flex align-items-center mb-3">
                             <Form.Label className='fw-bold me-2' htmlFor="entreHoras">Entre 2 horas</Form.Label>
                             <Form.Control 
                                 type="time" 
                                 className='me-2' 
-                                value={form.hora1} 
+                                value={filtro.hora1} 
                                 id="entreHoras"
                                 name="hora1"
-                                onChange={handleChange} />
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} />
                             <Form.Control 
                                 type="time" 
-                                value={form.hora2} 
+                                value={filtro.hora2} 
                                 name="hora2"
-                                onChange={handleChange} />
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} />
                         </Col>
                     </div>
                     <div className="row mb-3">
@@ -285,29 +320,29 @@ const FormAccidentes = ({ handleFilter, markerPosition, filtro }) => {
                             <Form.Control 
                                 type="date" 
                                 className='me-4' 
-                                value={form.fecha1} 
+                                value={filtro.fecha1} 
                                 id="fechaConcreta"
                                 name="fecha1"
-                                onChange={handleChange}/>
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}/>
                         </Col>
                         <Col className="d-flex align-items-center mb-3">
                             <Form.Label className='fw-bold me-2' htmlFor="entreFechas">Entre 2 fechas</Form.Label>
                             <Form.Control 
                                 type="date" 
                                 className='me-2' 
-                                value={form.fecha1} 
+                                value={filtro.fecha1} 
                                 id="entreFechas"
                                 name="fecha1"
-                                onChange={handleChange} />
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} />
                             <Form.Control 
                                 type="date" 
-                                value={form.fecha2} 
+                                value={filtro.fecha2} 
                                 name="fecha2"
-                                onChange={handleChange} />
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} />
                         </Col>
                     </div>
                     <input className="btn btn-azul me-4" type="submit" value="Filtrar"></input>
-                    <button className='btn btn-rojo' type='button' onClick={vaciarFiltro}>Limpiar filtro</button>
+                    <button className='btn btn-rojo' type='button' onClick={() => limpiarFiltro()}>Limpiar filtro</button>
                 </Form>
             </div>
         </div>

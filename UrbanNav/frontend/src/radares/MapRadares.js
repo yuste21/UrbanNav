@@ -2,22 +2,35 @@ import { MapContainer, Marker, Polygon, Popup, TileLayer } from "react-leaflet"
 import { SetViewOnClick, DisplayPosition, zoom, center } from "../MapFunctions" 
 import { useEffect, useState } from "react"
 import { useModal } from "../modal/useModal"
-import ModalWindow from "../modal/Modal"
- 
-function MapRadares ({ radares, setRadares, distritos, barrios, setLoading }) {
+import Modal from '../modal/Modal.js';
+import { useDispatch, useSelector } from "react-redux"
+import { getDataRadares, getRadares } from "../features/radar/dataRadarSlice"
+import { iconos } from "../markerIcons.js";
+
+function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, showBarChart, setShowTable }) {
+
+    const radares = useSelector(state => state.radares.dataRadares.radares)
+    const dispatch = useDispatch()
+
+    useEffect(() => {
+        if ((showBarChart || selectedRadar !== null) && !activateOverlay.includes('Radares') ) {
+            setActivateOverlay(activateOverlay + ' Radares')
+        }
+    }, [showBarChart, selectedRadar])
+
     //MODAL
     const [isOpenModal, openModal, closeModal] = useModal(false)
 
     const [map, setMap] = useState(null)
     const [radaresPrev, setRadaresPrev] = useState([])
-    const [activateOverlay, setActivateOverlay] = useState('Radares')
-    useEffect(() => {
-        if(barrios.length === 0 && distritos.length === 0) {
-            setActivateOverlay('Radares')
-        } else {
-            setActivateOverlay('Distritos')
-        }
-    }, [barrios, distritos])
+    const [activateOverlay, setActivateOverlay] = useState('Radares Distritos')
+    // useEffect(() => {
+    //     if(barrios.length === 0 && distritos.length === 0) {
+    //         setActivateOverlay('Radares')
+    //     } else {
+    //         setActivateOverlay('Distritos')
+    //     }
+    // }, [barrios, distritos])
 
     const handleOverlayChange = (selectedOverlay) => {
         var aux = activateOverlay.split(' ')
@@ -37,21 +50,29 @@ function MapRadares ({ radares, setRadares, distritos, barrios, setLoading }) {
     };
 
     const asignarRadares = (distrito) => {
-        setLoading(true)
         var aux = []
         
         for(const barrio of distrito.barrios) {
             aux = aux.concat(barrio.radares)
         }
-        setRadares(aux)
-        setLoading(false)
+        dispatch(getRadares({ radares: aux }))
+    }
+
+    const contarMultas = () => {
+        let contador = 0
+        radares.forEach((radar) => {
+            contador += radar.multas
+        })
+        return contador
     }
 
     return(
         <>
-            <div className="card">
+            <div className="card mt-3 mb-3">
                 <div className="card-title">
-                    <h1>Radares | Total: {radares.length}</h1>
+                    {radares && radares.length &&
+                        <h3>{radares.length} Radares | {contarMultas()} Multas</h3>
+                    }
                 </div>
                 <div className="card-body">
                     { map ? <DisplayPosition map={map} /> : null }
@@ -59,7 +80,7 @@ function MapRadares ({ radares, setRadares, distritos, barrios, setLoading }) {
                         <>
                             <button className="btn btn-secondary"
                                     onClick={() => {
-                                        setRadares(radaresPrev)
+                                        dispatch(getRadares({ radares: radaresPrev }))
                                         setActivateOverlay('Distritos')
                                     }}
                             >
@@ -67,14 +88,14 @@ function MapRadares ({ radares, setRadares, distritos, barrios, setLoading }) {
                             </button> <br/>
                         </>
                     }
-                    <label className="mb-2 me-2">Mostrar distritos</label>
+                    <label className="mb-2 me-2">Distritos</label>
                     <input type="checkbox"
                            className="me-4"
                            checked={activateOverlay.includes('Distritos')}
                            onClick={() => handleOverlayChange('Distritos')}
                            
                     />
-                    <label className="mb-2 me-2">Mostrar Barrios</label>
+                    <label className="mb-2 me-2">Barrios</label>
                     <input type="checkbox"
                            className="me-4"
                            checked={activateOverlay.includes('Barrios')}
@@ -95,13 +116,14 @@ function MapRadares ({ radares, setRadares, distritos, barrios, setLoading }) {
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         />
-                        {activateOverlay.includes('Distritos') && distritos && distritos.map((distrito, index) => (
+                        {activateOverlay.includes('Distritos') && distritos && distritos.map((distrito) => (
                             <Polygon positions={distrito.delimitaciones}
-                                     key={index}
+                                     key={(distrito.id+100)}
                             >   
                                 <Popup>
                                     <button className="btn"
                                             onClick={() => {
+                                                setSelectedRadar(null)
                                                 setRadaresPrev(radares)
                                                 asignarRadares(distrito)
                                                 setActivateOverlay('Radares')
@@ -109,6 +131,22 @@ function MapRadares ({ radares, setRadares, distritos, barrios, setLoading }) {
                                     >
                                         Mostrar radares de este distrito
                                     </button>
+                                    <button className="btn"
+                                            onClick={() => {
+                                                setSelectedRadar(null)
+                                                openModal(distrito.id+100)
+                                            }}
+                                    >
+                                        Info del distrito
+                                    </button>
+                                    <Modal isOpen={isOpenModal} 
+                                           closeModal={closeModal} 
+                                           info={{ data: 'Distrito', idx: (distrito.id+100) }}
+                                    >
+                                        <p style={{ fontWeight: 'bold' }}>
+                                            Nombre: {distrito.nombre !== '' ? distrito.nombre : 'Sin información'} <br/>
+                                        </p>
+                                    </Modal>
                                 </Popup>
                             </Polygon>
                         ))}
@@ -122,26 +160,51 @@ function MapRadares ({ radares, setRadares, distritos, barrios, setLoading }) {
                                 </Popup>
                             </Polygon>
                         ))}
-                        {activateOverlay.includes('Radares') && radares && radares.map((radar, index) => (
-                            <Marker key={index} position={[radar.lat, radar.lon]}>
-                                <Popup>
-                                    <button className="btn"
-                                            onClick={() => openModal()}
-                                    >
-                                        Ver más información
-                                    </button>
-                                    <ModalWindow isOpen={isOpenModal} closeModal={closeModal} info={{ data: 'Radar' }}
-                                    >
-                                        <p style={{ fontWeight: 'bold' }}>
-                                            Tipo: {radar.tipo !== '' ? radar.tipo : 'Sin información'} <br/>
-                                            Sentido: {radar.sentido !== '' ? radar.sentido : 'Sin información'} <br/>
-                                            ID: {radar.id} <br/>
-                                            UBI: {radar.ubicacion} <br/>
-                                            PK: {radar.pk}
-                                        </p>
-                                    </ModalWindow>
-                                </Popup>
-                            </Marker>
+                        {activateOverlay.includes('Radares') && radares && radares.map((radar) => (
+                            <>
+                                {selectedRadar !== null && selectedRadar.radar.id === radar.radar.id && (
+                                    <Popup position={[radar.radar.lat, radar.radar.lon]}>
+                                        <p>{selectedRadar.radar.ubicacion}</p>
+                                    </Popup>
+                                )}
+                                <Marker key={radar.radar.id} 
+                                        position={[radar.radar.lat, radar.radar.lon]}
+                                        icon={(selectedRadar !== null && selectedRadar.radar.id === radar.radar.id) ? iconos.verde : 
+                                               radar.multas > 0 ? iconos.rojo : iconos.azul}
+                                >
+                                    <Popup>
+                                        <button className="btn"
+                                                onClick={() => {
+                                                    //setSelectedRadar(null)
+                                                    openModal(radar.radar.id)
+                                                }}
+                                        >
+                                            Ver más información del radar
+                                        </button>
+                                        <Modal isOpen={isOpenModal} 
+                                            closeModal={closeModal} 
+                                            info={{ data: 'Radar', idx: radar.radar.id }}
+                                        >
+                                            <p style={{ fontWeight: 'bold' }}>
+                                                Tipo: {radar.radar.tipo !== '' ? radar.radar.tipo : 'Sin información'} <br/>
+                                                Sentido: {radar.radar.sentido !== '' ? radar.radar.sentido : 'Sin información'} <br/>
+                                                ID: {radar.radar.id} <br/>
+                                                Ubicacion: {radar.radar.ubicacion}
+                                            </p>
+                                        </Modal>
+                                        {radar.multas > 0 && (selectedRadar === null || selectedRadar.radar.id !== radar.radar.id) &&
+                                            <button className="btn"
+                                                    onClick={() => {
+                                                        setSelectedRadar(radar)
+                                                        setShowTable(true)
+                                                    }}
+                                            >
+                                                Mostrar multas
+                                            </button>
+                                        }
+                                    </Popup>
+                                </Marker>
+                            </>
                         ))}
                         <SetViewOnClick />
                     </MapContainer>

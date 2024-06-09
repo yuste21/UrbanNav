@@ -3,12 +3,14 @@ import { MapContainer, TileLayer, Marker, Polygon, Popup, LayersControl, LayerGr
 import { useState, useEffect } from 'react'
 import { iconos } from '../markerIcons'
 import LegendTrafico from "./LegendTrafico"
-import FormFlujo from './FormFlujo'
+import FormFlujo from '../charts/FormFlujo'
 import { useModal } from '../modal/useModal'
 import Modal from '../modal/Modal'
 import { URIsTrafico } from './URIsTrafico'
 import { DisplayPosition } from '../MapFunctions'
-
+import { useSelector } from 'react-redux'
+import { Button, Offcanvas, OverlayTrigger, Popover, Tooltip } from 'react-bootstrap';
+import FormTrafico from './FormTrafico'
 
 const MapTrafico = ({ activatedOverlay,
                       setActivatedOverlay,
@@ -16,25 +18,31 @@ const MapTrafico = ({ activatedOverlay,
                       setSelectedBar,
                       showBarChart, 
                       setShowBarChart, 
-                      setLoading, 
-                      estaciones, 
-                      media, 
-                      distritos, 
-                      barrios 
+                      handleFilter
                     }) => {
+
+    const estaciones = useSelector(state => state.trafico.dataTrafico.estaciones)
+    const distritos = useSelector(state => state.trafico.dataTrafico.distritos)
+    const barrios = useSelector(state => state.trafico.dataTrafico.barrios)
+    const media = useSelector(state => state.trafico.dataTrafico.media)    
+
+    const filtro = useSelector(state => state.trafico.filtro)
+    const [showForm, setShowForm] = useState(false)
+    const handleClose = () => setShowForm(false);
+    const handleShow = () => setShowForm(true);
 
     //Centrar Mapa (Display Position)
     const [map, setMap] = useState(null)
 
     //BarChart 
     //Uso esta variable de estado para mostrar en el mapa la zona seleccionada en el BarChart
-    const [barSelected, setBarSelected] = useState(selectedBar)
-    useEffect(() => {
-        if(selectedBar !== null && JSON.stringify(selectedBar) !== '{}') {
-            console.log('selectedBar payload = ' + JSON.stringify(selectedBar.activePayload[0].payload))
-            setBarSelected(selectedBar.activePayload[0].payload)
-        }
-    }, [selectedBar])
+    // const [barSelected, setBarSelected] = useState(selectedBar)
+    // useEffect(() => {
+    //     if(selectedBar !== null && JSON.stringify(selectedBar) !== '{}') {
+    //         //console.log('selectedBar payload = ' + JSON.stringify(selectedBar.activePayload[0].payload))
+    //         setBarSelected(selectedBar)
+    //     }
+    // }, [selectedBar])
     
     useEffect(() => {
         if(distritos.length === 0) {
@@ -47,7 +55,7 @@ const MapTrafico = ({ activatedOverlay,
     const handleOverlayChange = (selectedOverlay) => {
         var aux = activatedOverlay.split(' ')
         if(activatedOverlay.includes(selectedOverlay)) {     //Desactivo checkbox
-            var filtrado = aux.filter(el => el !== selectedOverlay)
+            var filtrado = aux.filter(el => el !== selectedOverlay && el !== '')
             setActivatedOverlay(filtrado.length > 0 ? filtrado[0] : '')
         } else {  //Activamos el checkbox selectedOverlay
             
@@ -111,35 +119,125 @@ const MapTrafico = ({ activatedOverlay,
             setZonaSeleccionada(zona)
         }
     }
-
-    //FORM + FLUJO
-    const [showForm, setShowForm] = useState(false)
     
+    //Filtro aplicado
+    const filtroString = () => {
+        let resultado = []
+        for(let key in filtro) {
+            if(filtro[key] && key !== 'filtrado') {
+                let valor
+                let clave
+                if(key === 'sentido') {
+                    clave = 'sentido: '
+                    //console.log(filtro[key])
+                    if(filtro[key] === 'Norte-Sur') {
+                        valor = 'Norte - Sur'
+                    } else if(filtro[key] === 'Sur-Norte') {
+                        valor = 'Sur - Norte'
+                    } else if(filtro[key] === 'Este-Oeste') {
+                        valor = 'Este - Oeste'
+                    } else {
+                        valor = 'Oeste - Este'
+                    }
+                } else if(key === 'getAll') {
+                    clave = 'Mostrando todo el trafico'
+                    valor = '  '
+                } else if(key === 'hora1' && filtro.hora2 === '') {
+                    clave = 'Hora concreta: '
+                    valor = `${filtro.hora1.split(':')[0]}:00`
+                } else if(key === 'hora2') {
+                    clave = 'Franja horaria: '
+                    valor = `${filtro.hora1} - ${filtro.hora2}`
+                } else if(key === 'fecha1' && filtro.fecha2 === '') {
+                    clave = 'Fecha concreta: '
+                    valor = filtro.fecha1
+                } else if(key === 'fecha2') {
+                    clave = 'Entre fechas: '
+                    valor = `${filtro.fecha1} - ${filtro.fecha2}`
+                } else if(key === 'hora1') {
+                    clave = ''
+                    valor = ''
+                } else {
+                    clave = key + ': '
+                    valor = filtro[key]
+                }
+                resultado.push(clave + valor)
+            }
+        }
+
+        return resultado
+    }
+
+    const popover = (
+        <Popover id='popover'>
+            <Popover.Header as="h4">Filtro aplicado</Popover.Header>
+            <Popover.Body className='popover-body'>
+            {filtroString(filtro).map((el, index) => (
+                <p key={index}>{el}</p>
+            ))}
+            </Popover.Body>
+        </Popover>
+    );
 
     return(
         <div className='container'>
             <div className='row'>
                 <div className='col-md-12 col-lg-3'>
-                    <div className='row'>
-                        <LegendTrafico zonaSeleccionada={zonaSeleccionada}/>
-                    </div>
                     {showBarChart ?
-                        <button className='btn btn-azul'
+                        <button className='btn btn-azul m-3'
                                 onClick={() => {
-                                    setBarSelected(null)
                                     setSelectedBar(null)
                                     setShowBarChart(false)
                                 }}
                         >
-                            Mostrar filtro
+                            Ocultar grafica
                         </button>
                     : (activatedOverlay.split(' ').includes('Distritos') || activatedOverlay.split(' ').includes('Barrios')) &&
-                        <button className='btn btn-morado'
+                        <button className='btn btn-morado mt-3'
                                 onClick={() => setShowBarChart(true)}
                         >
                             Mostrar grafica de zonas más concurridas
                         </button>
                     }
+                    {/* FILTRO */}
+                    {!showForm && !showBarChart &&
+                        <button className='btn' onClick={handleShow}>
+                            <i class="bi bi-filter"></i>
+                        </button>
+                    }
+                    {
+                        <Offcanvas show={showForm} onHide={handleClose} style={{ width: '500px' }}>
+                            <Offcanvas.Body>
+                                <FormTrafico handleFilter={handleFilter}
+                                            handleClose={handleClose}
+                                />
+                            </Offcanvas.Body>
+                        </Offcanvas>
+                    }
+                    <hr></hr>
+                    <div className='row'>
+                        {!showForm && 
+                            <>
+                                <h5>Trafico Medio {media}</h5>
+                                {filtro.filtrado &&
+                                    <div className='row'>
+                                        <OverlayTrigger
+                                            placement='auto'
+                                            trigger='click'
+                                            overlay={popover}
+                                        >
+                                            <button className='btn'>Mostrar Filtrado</button>
+                                        </OverlayTrigger>
+                                    </div>
+
+                                }
+                            </>
+                        }
+                    </div>
+                    <hr></hr>
+                    <div className='row'>
+                        <LegendTrafico zonaSeleccionada={zonaSeleccionada}/>
+                    </div>
                 </div>
                 <div className='col-md-12 col-lg-9'>
                     <div className='card m-3'>
@@ -179,9 +277,9 @@ const MapTrafico = ({ activatedOverlay,
                                     var estacionOtra = estaciones.find(el => el.estacion === estacion.estacion && el.sentido !== estacion.sentido);
                                     return(
                                         <>
-                                            {barSelected !== null && barSelected.estacion === estacion.estacion && (
+                                            {selectedBar !== null && selectedBar.estacion === estacion.estacion && (
                                                 <Popup position={[estacion.lat, estacion.lon]}>
-                                                    <p>{barSelected.nombre}</p>
+                                                    <p>{selectedBar.nombre}</p>
                                                 </Popup>
                                             )}
                                             <Marker key={estacion.estacion} 
@@ -193,7 +291,6 @@ const MapTrafico = ({ activatedOverlay,
                                                     }
                                                     eventHandlers={{
                                                         click: () => {
-                                                            setBarSelected(null)
                                                             setSelectedBar(null)
                                                         }
                                                     }}
@@ -206,7 +303,7 @@ const MapTrafico = ({ activatedOverlay,
                                                     </button>
                                                     <Modal isOpen={isOpenModal} 
                                                            closeModal={closeModal} 
-                                                           info={{ data: 'Trafico', setLoading, aforo: estacion, tipo: 'estacion', idx: estacion.estacion }}
+                                                           info={{ data: 'Trafico', entidad: estacion, tipo: 'estacion', idx: estacion.estacion }}
                                                     >
                                                         <p style={{ fontWeight: 'bold' }}>
                                                             Nombre: {estacion.nombre} <br/>
@@ -232,9 +329,9 @@ const MapTrafico = ({ activatedOverlay,
                                     <>
                                         {/* Le sumo 1000 al codigo del distrito para que no coincida con los numeros de las estaciones 
                                             a la hora de abrir el ModalWindow */}
-                                        {barSelected !== null && (barSelected.codigo+1000) === (distrito.codigo+1000) && (
+                                        {selectedBar !== null && (selectedBar.codigo+1000) === (distrito.codigo+1000) && (
                                             <Popup position={distrito.centro}>
-                                                <p>{barSelected.nombre}</p>
+                                                <p>{selectedBar.nombre}</p>
                                             </Popup>
                                         )}
                                         <Polygon key={distrito.codigo+1000}
@@ -258,11 +355,11 @@ const MapTrafico = ({ activatedOverlay,
                                                 </button>
                                                 <Modal isOpen={isOpenModal} 
                                                        closeModal={closeModal} 
-                                                       info={{data: 'Trafico', setLoading, entidad: distrito, tipo: 'trafico distrito', idx: (distrito.codigo+1000)}}
+                                                       info={{data: 'Trafico', entidad: distrito, tipo: 'trafico distrito', idx: (distrito.codigo+1000)}}
                                                 >
                                                     <p style={{ fontWeight: 'bold' }}>
                                                         Nombre: {distrito.nombre} <br/>
-                                                        Codigo: {distrito.estacion} <br/>
+                                                        Codigo: {distrito.codigo} <br/>
                                                         Trafico medio: {distrito.media}
                                                     </p>
                                                 </Modal>
@@ -272,9 +369,9 @@ const MapTrafico = ({ activatedOverlay,
                                 ))} 
                                 {activatedOverlay.includes('Barrios') && barrios && barrios.length > 0 && barrios.map((barrio) => (
                                     <>
-                                        {barSelected !== null && barSelected.id === barrio.id && (
+                                        {selectedBar !== null && selectedBar.id === barrio.id && (
                                             <Popup position={barrio.centro}>
-                                                <p>{barSelected.nombre}</p>
+                                                <p>{selectedBar.nombre}</p>
                                             </Popup>
                                         )}
                                         <Polygon key={barrio.id}
@@ -298,7 +395,7 @@ const MapTrafico = ({ activatedOverlay,
                                                 </button>
                                                 <Modal isOpen={isOpenModal} 
                                                        closeModal={closeModal} 
-                                                       info={{data: 'Trafico', setLoading, aforo: barrio, tipo: 'barrio', idx: barrio.id}}
+                                                       info={{data: 'Trafico', aforo: barrio, tipo: 'barrio', idx: barrio.id}}
                                                 >
                                                     <p style={{ fontWeight: 'bold' }}>
                                                         Nombre: {barrio.nombre} <br/>

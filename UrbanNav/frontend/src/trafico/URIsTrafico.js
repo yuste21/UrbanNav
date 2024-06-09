@@ -3,6 +3,7 @@ const baseURI = 'http://localhost:8000/trafico'
 export const URIsTrafico = {
     //Individuales
     getAll: `${baseURI}/`,
+    filtro: `${baseURI}/filtro`,
     mes: `${baseURI}/mes`,
     sentido: `${baseURI}/sentido`,
     horaConcreta: `${baseURI}/hora/concreta`,

@@ -4,8 +4,6 @@ export const URIsEstacionamientos = {
     base: baseUri,
     barrio: `${baseUri}/barrio`,
     distrito: `${baseUri}/distrito`,
-    tipo: `${baseUri}/tipo`,
-    color: `${baseUri}/color`,
-    color_tipo: `${baseUri}/color/tipo`,
+    filtro: `${baseUri}/filtro`,
     zonas: `${baseUri}/zonas`
 }

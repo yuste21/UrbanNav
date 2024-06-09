@@ -18,10 +18,16 @@ export const BarrioModel = db.define('barrios', {
 })
 
 MultaModel.belongsTo(BarrioModel, {
-    foreignKey: 'barrioId'
+    foreignKey: {
+        name: 'barrioId',
+        allowNull: true
+    }
 })
 BarrioModel.hasMany(MultaModel, {
-    foreignKey: 'barrioId',
+    foreignKey: {
+        name: 'barrioId',
+        allowNull: true
+    },
     as: 'multas'
 })
 

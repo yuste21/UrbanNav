@@ -60,6 +60,11 @@ html, body {
   pointer-events: none;
 }
 
+.bi {
+  font-size: 24px;
+  color: var(--oscuro);
+}
+
 .btn-amarillo {
   background-color: var(--amarillo) !important;
   color: var(--oscuro) !important;
@@ -113,6 +118,13 @@ html, body {
 .btn-rojo:hover {
   background-color: var(--rojo1-alpha) !important;
   border-color: var(--rojo1-alpha) !important;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  margin-right: 1rem;
 }
 
 .card {
@@ -179,6 +191,17 @@ html, body {
   min-height: 100% !important;
   background: rgb(243,244,247);
   background: linear-gradient(86deg, rgba(243,244,247,1) 0%, rgba(193,198,215,1) 100%);
+}
+
+.popover-body {
+  max-height: 150px; 
+  overflow-y: auto;
+}
+
+.tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {

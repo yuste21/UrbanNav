@@ -691,7 +691,85 @@ export const getChartHoraDistrito = async(req, res) => {
     }
 }
 
-//------------------------------FILTRO CON 1 ATRIBUTO-----------------------------------------------//
+export const filtro = async (req, res) => {
+    try {
+        const { orientacion, month, year, sentido, hora1, hora2, fecha1, fecha2 } = req.query
+
+        let whereConditions = {}
+
+        if (month !== '' && year !== '') {
+            const fecha = new Date(year, month - 1, 1)
+            const fechaInicial = startOfMonth(fecha)
+            const fechaFinal = endOfMonth(fecha)
+
+            whereConditions.fecha = {
+                [Op.between]: [fechaInicial, fechaFinal]
+            }
+        } else if (fecha1 !== '' && fecha2 !== '') {
+            var fechaInicio
+            var fechaFin
+
+            if(fecha1 <= fecha2) {
+                fechaInicio = fecha1
+                fechaFin = fecha2
+            } else {
+                fechaInicio = fecha2
+                fechaFin = fecha1
+            }
+
+            whereConditions.fecha = {
+                [Op.between]: [fechaInicio, fechaFin]
+            }
+        } else if (fecha1 !== '') {
+            whereConditions.fecha = fecha1
+        }
+
+        if (sentido !== '') {
+            whereConditions['$orientacione.orientacion$'] = sentido
+        }
+
+        var horaMin = new Date()
+        var aux1 = hora1.split(':')
+        var horaMax = new Date()
+        var aux2 = hora2.split(':')
+        if (hora1 !== '' && hora2 !== '') {
+
+            if(hora1 < hora2) {
+                horaMin.setHours(parseInt(aux1[0]), parseInt(aux1[1]), 0)
+                horaMax.setHours(parseInt(aux2[0]), parseInt(aux2[1]), 0)
+            } else {
+                horaMin.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
+                horaMax.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
+            }   
+            
+            horaMin = horaMin.getHours()
+            horaMax = horaMax.getHours()
+        } else if (hora1 !== '') {
+            horaMax = null
+            horaMin.setHours(aux1[0], aux1[1], 0)
+            horaMin = horaMin.getHours()
+        } else {
+            horaMin = null
+            horaMax = null
+        }
+
+        const trafico = await TraficoModel.findAll({
+            include: [{ model: OrientacionModel, as: 'orientacione' }],
+            where: whereConditions,
+            attributes: ['id']
+        })
+
+        const traficoId = trafico.map(el => el.id)
+
+        const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, horaMin, horaMax)
+        
+        res.json({ distritos, barrios, estaciones_trafico, media_total })
+    } catch (error) {
+        console.log('Error en la consulta filtro', error.message)
+        res.status(500).json({ error: 'Error en la consulta filtro'})
+    }
+}
+
 //BUSCAR POR MES (Y AÑO)
 export const getTraficoPorMes = async(req, res) => {
     try {
@@ -748,6 +826,7 @@ export const getTraficoEntreHoras = async(req, res) => {
     try {
         var { hora1, hora2 } = req.query
 
+        console.log('Hora1 = ' + hora1)
         hora1 = hora1.split(':')
         hora2 = hora2.split(':')
 

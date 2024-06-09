@@ -659,11 +659,26 @@ export async function estacionamientosAux(estacionamientosReq) {
     })
 }
 
-//--------------------------------------------------------------------------------------------------//
-//BUSCAR POR TIPO DE APARCAMIENTO
-export const buscarPorTipo = async(req, res) => {
+
+export const filtro = async(req, res) => {
     try {
-        const { tipo } = req.query
+        const { tipo, color, plazas } = req.query
+
+        let whereConditions = {}
+
+        if (tipo !== '') {
+            whereConditions['$tipo_estacionamiento.tipo_estacionamiento$'] = tipo
+        }
+
+        if (color !== '') {
+            whereConditions['$colore.color$'] = color
+        }
+
+        if (plazas > 0) {
+            whereConditions.plazas = {
+                [Op.gte]: plazas
+            }
+        }
 
         const estacionamientosBD = await EstacionamientoModel.findAll({
             include: [
@@ -676,9 +691,7 @@ export const buscarPorTipo = async(req, res) => {
                     as: 'colore'
                 }
             ],
-            where: {
-                '$tipo_estacionamiento.tipo_estacionamiento$': tipo
-            }
+            where: whereConditions
         })
 
         const { distritos, barrios, estacionamientos } = await estacionamientosAux(estacionamientosBD)
@@ -687,66 +700,5 @@ export const buscarPorTipo = async(req, res) => {
     } catch (error) {
         console.error('Error en la consulta buscarPorTipo: ', error);
         res.status(500).json({ message: ' Error en la consulta buscarPorTipo' });
-    }
-}
-
-//BUSCAR POR COLOR
-export const buscarPorColor = async(req, res) => {
-    try {
-        const { color } = req.query
-
-        const estacionamientosBD = await EstacionamientoModel.findAll({
-            include: [
-                { 
-                    model: ColorModel, 
-                    as: 'colore' 
-                },
-                {
-                    model: Tipo_EstacionamientoModel,
-                    as: 'tipo_estacionamiento'
-                }
-            ],
-            where: {
-                '$colore.color$': color
-            }
-        })
-
-        const { distritos, barrios, estacionamientos } = await estacionamientosAux(estacionamientosBD)
-
-        res.json({ distritos, barrios, estacionamientos })
-    } catch (error) {
-        console.error('Error en la consulta buscarPorColor: ', error);
-        res.status(500).json({ message: ' Error en la consulta buscarPorColor' });
-    }
-}
-
-//BUSCAR POR TIPO Y COLOR
-export const buscarPorColorTipo = async (req, res) => {
-    try {
-        const { color, tipo } = req.query
-        
-        const estacionamientosBD = await EstacionamientoModel.findAll({
-            include: [
-                {
-                    model: ColorModel,
-                    as: 'colore'
-                },
-                {
-                    model: Tipo_EstacionamientoModel,
-                    as: 'tipo_estacionamiento'
-                }
-            ],
-            where: {
-                '$tipo_estacionamiento.tipo_estacionamiento$': tipo,
-                '$colore.color$': color
-            }
-        })
-
-        const { distritos, barrios, estacionamientos } = await estacionamientosAux(estacionamientosBD)
-
-        res.json({ distritos, barrios, estacionamientos })
-    } catch (error) {
-        console.error('Error en la consulta buscarPorColorTipo: ', error);
-        res.status(500).json({ message: ' Error en la consulta buscarPorColorTipo' });
     }
 }

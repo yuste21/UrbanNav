@@ -1,7 +1,7 @@
 import db from '../db.js'
 import { DataTypes, FLOAT } from 'sequelize'
 
-const Calificacion_MultaModel = db.define('calificaciones', {
+export const Calificacion_MultaModel = db.define('calificaciones', {
     calificacion_multa: { type: DataTypes.ENUM('LEVE', 'GRAVE', 'MUY GRAVE') }
 })
 
@@ -14,6 +14,7 @@ export const MultaModel = db.define('multas', {
     coste: { type: DataTypes.DOUBLE },
     puntos: { type: DataTypes.INTEGER },
     denunciante: { type: DataTypes.STRING },
+    descuento: { type: DataTypes.BOOLEAN },
     infraccion: { type: DataTypes.STRING },
     vel_limite: { 
         type: DataTypes.INTEGER,
@@ -30,7 +31,7 @@ export const MultaModel = db.define('multas', {
 
 Calificacion_MultaModel.hasMany(MultaModel, {
     foreignKey: 'calificacionMultaId',
-    as: 'calificacion_multas'
+    as: 'calificacion'
 })
 
 MultaModel.belongsTo(Calificacion_MultaModel, {

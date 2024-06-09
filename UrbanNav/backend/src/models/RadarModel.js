@@ -2,7 +2,7 @@ import db from '../db.js'
 import { DataTypes } from 'sequelize' 
 import { MultaModel } from './MultaModel.js'
 
-const RadarModel = db.define('radares', {
+export const RadarModel = db.define('radares', {
     lat: { type: DataTypes.FLOAT },
     lon: { type: DataTypes.FLOAT },
     sentido: { type: DataTypes.STRING },
@@ -14,7 +14,7 @@ const RadarModel = db.define('radares', {
 
 RadarModel.hasMany(MultaModel, {
     foreignKey: {
-        name: 'multaId',
+        name: 'radarId',
         allowNull: true
     },
     as: 'multas'
@@ -22,7 +22,7 @@ RadarModel.hasMany(MultaModel, {
 
 MultaModel.belongsTo(RadarModel, {
     foreignKey: {
-        name: 'multaId',
+        name: 'radarId',
         allowNull: true
     }
 })

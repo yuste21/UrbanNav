@@ -8,7 +8,7 @@ import Accidentes from './accidentes/Accidentes';
 import Trafico from './trafico/Trafico';
 import Radares from './radares/Radares';
 import Multas from './radares/Multas';
-import FlujoTrafico from './trafico/FlujoTrafico';
+import Flujo from './charts/Flujo';
 
 
 function App() {
@@ -19,7 +19,7 @@ function App() {
           <Route path="/accidentes" element={<Accidentes/>} />
           <Route path='/estacionamientos' element={<Estacionamientos/>} /> 
           <Route path='/trafico' element={<Trafico/>} />
-          <Route path='/flujo' element={<FlujoTrafico/>} />
+          <Route path='/flujo' element={<Flujo/>} />
           <Route path='/radares' element={<Radares/>} />
           <Route path='/multas' element={<Multas/>} />
           <Route path='/' element={<InicioBloque/>} />

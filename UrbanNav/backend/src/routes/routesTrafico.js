@@ -1,6 +1,6 @@
 import { Router } from "express"; 
 import { leerCSV, getOrientacion,
-        getAllTrafico, 
+        getAllTrafico, filtro,
 
         //Filtro Chart
         getChartFechaEstacion, getChartHoraEstacion, getChartFechaDistrito, getChartHoraDistrito,
@@ -22,6 +22,8 @@ const routerTrafico = Router()
 
 routerTrafico.post('/', leerCSV)
 routerTrafico.get('/modelo/orientacion', getOrientacion)
+
+routerTrafico.get('/filtro', filtro)
 
 //Filtro individual + getAll
 routerTrafico.get('/', getAllTrafico)

@@ -9,6 +9,7 @@ import EstacionamientoModel, { ColorModel, Tipo_EstacionamientoModel } from "../
 import { OrientacionModel, TraficoModel } from "../models/TraficoModel.js";
 import { getEstaciones, traficoAux } from "./TraficoController.js";
 import RadarModel from "../models/RadarModel.js";
+import { MultaModel, Calificacion_MultaModel } from "../models/MultaModel.js";
 import { accidentesAux } from "./AccidenteController.js";
 
 export const getAllDistritos = async(req, res) => {
@@ -261,6 +262,20 @@ export const getRadaresInicio = async(req, res) => {
                         {
                             model: RadarModel,
                             as: 'radares',
+                            include: [
+                                {
+                                    model: MultaModel,
+                                    as: 'multas',
+                                    required: false,
+                                    limit: 50,
+                                    include: [
+                                        {
+                                            model: Calificacion_MultaModel,
+                                            as: 'calificacione'
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
                 }
@@ -272,7 +287,13 @@ export const getRadaresInicio = async(req, res) => {
         distritos.forEach((distrito) => {
             distrito.barrios.forEach((barrio) => {
                 barrios.push(barrio)
-                radares = radares.concat(barrio.radares)
+                //radares = radares.concat(barrio.radares)
+                barrio.radares.forEach((radar) => {
+                    radares.push({
+                        'radar': radar,
+                        'multas': radar.multas.length
+                    })
+                })
             })
         })
 
