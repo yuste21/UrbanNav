@@ -9,6 +9,7 @@ import routerTrafico from './routes/routesTrafico.js'
 import routerDistrito from './routes/routesDistrito.js'
 import routerBarrio from './routes/routesBarrio.js'
 import routerMultas from './routes/routesMultas.js'
+require('dotenv').config()
 
 const app = express()
 
