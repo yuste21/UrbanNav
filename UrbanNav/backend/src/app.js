@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express'
 import cors from 'cors'
 import db from './db.js'
@@ -9,7 +12,6 @@ import routerTrafico from './routes/routesTrafico.js'
 import routerDistrito from './routes/routesDistrito.js'
 import routerBarrio from './routes/routesBarrio.js'
 import routerMultas from './routes/routesMultas.js'
-require('dotenv').config()
 
 const app = express()
 
