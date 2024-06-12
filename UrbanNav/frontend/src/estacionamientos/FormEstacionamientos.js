@@ -1,17 +1,23 @@
 import { Form, Col, OverlayTrigger, Popover } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { handleChange, getDataEstacionamientosInicio, activarFiltro, vaciarFiltro } from '../features/estacionamiento/dataEstacionamientoSlice';
+import { useEffect, useState } from 'react';
 
 const FormEstacionamientos = ({ handleFilter }) => {
 
     const filtro = useSelector(state => state.estacionamientos.filtro)
-    const estacionamientos = useSelector(state => state.estacionamientos.dataEstacionamientos.estacionamientos)
+    const [validated, setValidated] = useState(false)
     const dispatch = useDispatch()
     
+    const [filtroAplicado, setFiltroAplicado] = useState([])
+    useEffect(() => {
+        setFiltroAplicado(filtroString(filtro))
+    }, [])
+
     const filtroString = (filtro) => {
         let resultado = []
         for(let key in filtro) {
-            if(filtro[key] && filtro[key] !== 0 && key !== 'filtrado') {
+            if(filtro[key] && filtro[key] !== 0 && key !== 'filtrado' && key !== 'error' && !key.includes('plazas')) {
                 if(key !== 'zonas') {
                     resultado.push(`${key}: ${filtro[key]}`)
                 } else if (filtro[key].activo) {
@@ -21,6 +27,18 @@ const FormEstacionamientos = ({ handleFilter }) => {
             }
         }
 
+        if (filtro.plazas1 !== '' && filtro.plazas2 !== '') {
+            if (filtro.plazas1 === filtro.plazas2) {
+                resultado.push(`${filtro.plazas1} plazas`)
+            } else {
+                resultado.push(`Entre ${filtro.plazas1} y ${filtro.plazas2} plazas`)
+            }
+        } else if (filtro.plazas1 !== '') {
+            resultado.push(`Mínimo ${filtro.plazas1} plazas`)
+        } else if (filtro.plazas2 !== '') {
+            resultado.push(`Máximo ${filtro.plazas2} plazas`)
+        }
+
         return resultado
     }
 
@@ -28,7 +46,7 @@ const FormEstacionamientos = ({ handleFilter }) => {
         <Popover id='popover'>
             <Popover.Header as="h4">Filtro aplicado</Popover.Header>
             <Popover.Body className='popover-body'>
-            {filtroString(filtro).map((el, index) => (
+            {filtroAplicado.map((el, index) => (
                 <p key={index}>{el}</p>
             ))}
             </Popover.Body>
@@ -38,8 +56,18 @@ const FormEstacionamientos = ({ handleFilter }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault()
+
+        if (!filtro.color && !filtro.tipo && !filtro.plazas1 && !filtro.plazas2) {
+            alert('Datos incompletos')
+            return
+        } else if (filtro.error.plazas !== '') {
+            setValidated(false)
+            return
+        }
+
+        setValidated(true)
         dispatch(activarFiltro())
-        handleFilter(activarFiltro())
+        handleFilter(filtro)
     }
 
     const limpiarFiltro = () => {
@@ -51,11 +79,8 @@ const FormEstacionamientos = ({ handleFilter }) => {
     return(
         <>
             <div className="card">
-                <div className="card-title">
-                    <h3>Filtrar</h3>
-                </div>
                 <div className="card-body">
-                    <Form onSubmit={handleSubmit}>
+                    <Form noValidate validated={validated} onSubmit={handleSubmit}>
                         {/* COLOR */}
                         <div className='row mb-4'>
                             <Form.Group as={Col}
@@ -108,16 +133,35 @@ const FormEstacionamientos = ({ handleFilter }) => {
                             <Form.Group as={Col}
                                         className='d-flex align-items.center'
                             >
-                                <Form.Label className="fw-bold me-2" htmlFor="plazas">Plazas</Form.Label>
+                                <Form.Label className="fw-bold me-2" htmlFor="plazas1">Mínimo plazas</Form.Label>
                                 <Form.Control type='number'
                                               min="0"
                                               max="60"
                                               style={{ width: "100px" }}
-                                              id="plazas"
-                                              name="plazas"
-                                              value={filtro.plazas}
+                                              id="plazas1"
+                                              name="plazas1"
+                                              value={filtro.plazas1}
                                               onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                              isInvalid={!!filtro.error.plazas}
                                 />
+                                <Form.Control.Feedback type='invalid'>
+                                    {filtro.error.plazas}
+                                </Form.Control.Feedback>
+                    
+                                <Form.Label className="fw-bold ms-4 me-2" htmlFor="plazas2">Máximo plazas</Form.Label>
+                                <Form.Control type='number'
+                                              min="0"
+                                              max="60"
+                                              style={{ width: "100px" }}
+                                              id="plazas2"
+                                              name="plazas2"
+                                              value={filtro.plazas2}
+                                              onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                              isInvalid={!!filtro.error.plazas}
+                                />
+                                <Form.Control.Feedback type='invalid'>
+                                    {filtro.error.plazas}
+                                </Form.Control.Feedback>
                             </Form.Group>
                         </div>
                 

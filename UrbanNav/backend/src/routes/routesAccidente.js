@@ -1,6 +1,5 @@
-import express from 'express'
+import express from "express"
 import { getAllAccidentes, getZonas, getZona_concreta, leerCSV_coches, leerCSV_bicis, 
-         getSexo, getClima, getTipoAccidente, getTipoPersona, getTipoVehiculo, getLesividad,
          getChartFechaDistrito, getChartHoraDistrito, getChartFechaBarrio, getChartHoraBarrio,
 
         filtro,
@@ -26,12 +25,6 @@ routerAccidente.get('/chart/hora/barrio', getChartHoraBarrio)
 
 //Filtro individual + getZonas + getAll
 routerAccidente.get('/', getAllAccidentes)
-routerAccidente.get('/modelo/sexo', getSexo)
-routerAccidente.get('/modelo/clima', getClima)
-routerAccidente.get('/modelo/tipoAccidente', getTipoAccidente)
-routerAccidente.get('/modelo/tipoPersona', getTipoPersona)
-routerAccidente.get('/modelo/tipoVehiculo', getTipoVehiculo)
-routerAccidente.get('/modelo/lesividad', getLesividad)
 
 routerAccidente.post('/zonas', getZonas)
 routerAccidente.post('/zona', getZona_concreta)

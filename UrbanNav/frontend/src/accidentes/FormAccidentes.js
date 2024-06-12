@@ -1,35 +1,35 @@
 import { useContext, useEffect, useState } from "react"
 import { Form, Col, Button } from 'react-bootstrap';
-import { useForm } from "./useFormAccidentes.js"
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { useDispatch, useSelector } from "react-redux";
-import { handleChange, initialFilter, vaciarFiltro, activarFiltro, getDataAccidentesInicio } from "../features/accidente/dataAccidenteSlice.js";
+import { handleChange, initialFilter, vaciarFiltro, activarFiltro, getDataAccidentesInicio, initialError } from "../features/accidente/dataAccidenteSlice.js";
 import { store } from "../app/store.js";
 
 const FormAccidentes = ({ handleFilter, handleClose }) => {
     const dispatch = useDispatch()
     const filtro = useSelector(state => state.accidentes.filtro)
+    const [validated, setValidated] = useState(false)
 
     const handleSubmit = (event) => {
         event.preventDefault()
+        const form = event.currentTarget
 
         if(!filtro.accidente && !filtro.alcohol && !filtro.clima && !filtro.drogas && !filtro.edad1 && 
             !filtro.edad2 && !filtro.fecha1 && !filtro.fecha2 && !filtro.hora1 && !filtro.hora2 && !filtro.lesion && 
             !filtro.sexo && !filtro.vehiculo && filtro.radio.distancia === 0) {
             alert('Datos incompletos')
             return;
+        } else if (filtro.error.edad !== '' || filtro.error.fecha !== '' || filtro.error.hora !== '') {
+            event.stopPropagation()
+            setValidated(false)
+            return;
         }
-
+        setValidated(true)
         dispatch(activarFiltro())
 
         handleFilter(filtro)
     }
 
-    // IMPLEMENTAR THUNK
-    // const limpiarFiltro = () => {
-    //     dispatch(vaciarFiltro())
-    //     store.dispatch(handleFilter())
-    // }
 
     const limpiarFiltro = () => {
         dispatch(vaciarFiltro())    //Limpiar filtro
@@ -46,7 +46,7 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                 </div>
             </div>
             <div className='card-body'> 
-                <Form onSubmit={(event) => handleSubmit(event)}>
+                <Form noValidate validated={validated} onSubmit={(event) => handleSubmit(event)} >
                     <div className="row">
                             {!filtro.radio.activo ? 
                                 <button className="btn btn-azul mb-3 me-4" 
@@ -267,7 +267,7 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                         <Form.Group as={Col}
                                     className="d-flex align-items-center"
                         >
-                            <Form.Label className="fw-bold me-2" htmlFor="edad1">Rango edad</Form.Label>
+                            <Form.Label className="fw-bold me-2" htmlFor="edad1">Edad mínima</Form.Label>
                             <Form.Control type="number"
                                           min="0"
                                           max="74"
@@ -276,7 +276,12 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                                           className="me-2"
                                           value={filtro.edad1}
                                           onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                          isInvalid={!!filtro.error.edad}
                             />
+                            <Form.Control.Feedback type="invalid">
+                                {filtro.error.edad}
+                            </Form.Control.Feedback>
+                            <Form.Label className="fw-bold me-2" htmlFor="edad2">Edad máxima</Form.Label>
                             <Form.Control type="number"
                                           min="0"
                                           max="74"
@@ -284,61 +289,69 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                                           name="edad2"
                                           value={filtro.edad2}
                                           onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                          isInvalid={!!filtro.error.edad}
                             />
+                            <Form.Control.Feedback type="invalid">
+                                {filtro.error.edad}
+                            </Form.Control.Feedback>
                         </Form.Group>
                     </div>
                     <div className="row mb-3">
                         <Col className="d-flex align-items-center mb-3">
-                            <Form.Label className='fw-bold me-2' htmlFor="horaConcreta">Hora concreta</Form.Label>
-                            <Form.Control 
-                                type="time" 
-                                className='me-4' 
-                                value={filtro.hora1} 
-                                id="horaConcreta"
-                                name="hora1"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}/>
-                        </Col>
-                        <Col className="d-flex align-items-center mb-3">
-                            <Form.Label className='fw-bold me-2' htmlFor="entreHoras">Entre 2 horas</Form.Label>
+                            <Form.Label className='fw-bold me-2' htmlFor="hora1">Desde</Form.Label>
                             <Form.Control 
                                 type="time" 
                                 className='me-2' 
                                 value={filtro.hora1} 
-                                id="entreHoras"
+                                id="hora1"
                                 name="hora1"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} />
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                isInvalid={!!filtro.error.hora}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {filtro.error.hora}
+                            </Form.Control.Feedback>
+                            <Form.Label className='fw-bold me-2' htmlFor="hora2">Hasta</Form.Label>
                             <Form.Control 
                                 type="time" 
                                 value={filtro.hora2} 
+                                id="hora2"
                                 name="hora2"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} />
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
+                                isInvalid={!!filtro.error.hora}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {filtro.error.hora}
+                            </Form.Control.Feedback>
                         </Col>
                     </div>
                     <div className="row mb-3">
                         <Col className="d-flex align-items-center mb-3">
-                            <Form.Label className='fw-bold me-2' htmlFor="fechaConcreta">Fecha concreta</Form.Label>
-                            <Form.Control 
-                                type="date" 
-                                className='me-4' 
-                                value={filtro.fecha1} 
-                                id="fechaConcreta"
-                                name="fecha1"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}/>
-                        </Col>
-                        <Col className="d-flex align-items-center mb-3">
-                            <Form.Label className='fw-bold me-2' htmlFor="entreFechas">Entre 2 fechas</Form.Label>
+                            <Form.Label className='fw-bold me-2' htmlFor="fecha1">Desde</Form.Label>
                             <Form.Control 
                                 type="date" 
                                 className='me-2' 
                                 value={filtro.fecha1} 
-                                id="entreFechas"
+                                id="fecha1"
                                 name="fecha1"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} />
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
+                                isInvalid={!!filtro.error.fecha}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {filtro.error.fecha}
+                            </Form.Control.Feedback>
+                            <Form.Label className='fw-bold me-2' htmlFor="fecha2">Hasta</Form.Label>
                             <Form.Control 
                                 type="date" 
                                 value={filtro.fecha2} 
+                                id="fecha2"
                                 name="fecha2"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} />
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
+                                isInvalid={!!filtro.error.fecha}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {filtro.error.fecha}
+                            </Form.Control.Feedback>
                         </Col>
                     </div>
                     <input className="btn btn-azul me-4" type="submit" value="Filtrar"></input>

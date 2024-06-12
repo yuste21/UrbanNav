@@ -2,15 +2,28 @@ import { useFormTrafico } from "./UseFormTrafico"
 import { Form, Col } from 'react-bootstrap'
 import { useDispatch, useSelector } from "react-redux"
 import { handleChange, activarFiltro, getAll, vaciarFiltro, getDataTraficoInicio } from "../features/trafico/dataTraficoSlice"
+import { useState } from "react"
 
-const FormTrafico = ({ handleFilter }) => {
+const FormTrafico = ({ handleFilter, handleClose }) => {
     //const {form, handleSubmit, handleChange, vaciarFiltro, getAll} = useFormTrafico(initialForm, handleFilter)
 
     const dispatch = useDispatch()
     const filtro = useSelector(state => state.trafico.filtro)
+    const [validated, setValidated] = useState(false)
+
     const handleSubmit = (e) => {
         e.preventDefault()
 
+        if (!filtro.fecha1 && !filtro.fecha2 && !filtro.mes && !filtro.hora1 && !filtro.hora2 && 
+            !filtro.sentido && !filtro.getAll) {
+            alert('Datos incompletos')
+            return
+        } else if (filtro.error.fecha !== '' || filtro.error.hora !== '' || filtro.error.mes !== '') {
+            setValidated(false)
+            return
+        }
+
+        setValidated(true)
         dispatch(activarFiltro())
         handleFilter()
     }
@@ -24,10 +37,14 @@ const FormTrafico = ({ handleFilter }) => {
         <>
             <div className="card">
                 <div className="card-title">
-                    <h3>Filtrar por: </h3> <br/>
+                    <div className="button-container">
+                        <button onClick={handleClose} className="btn">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
                 </div>
                 <div className="card-body">
-                    <Form onSubmit={handleSubmit}>
+                    <Form noValidate validated={validated} onSubmit={handleSubmit}>
                         <div className="row mb-4">
                             <Form.Group as={Col}
                                         className="d-flex align-items-center"
@@ -39,71 +56,64 @@ const FormTrafico = ({ handleFilter }) => {
                                               value={filtro.mes}
                                               onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
                                               style={{ width: '200px' }}
+                                              isInvalid={!!filtro.error.mes}
                                 />
+                                <Form.Control.Feedback type='invalid'>
+                                    {filtro.error.mes}
+                                </Form.Control.Feedback>
                             </Form.Group>
                         </div>
                         <div className="row mb-4">
                             <Col className="d-flex align-items-center">
-                                <Form.Label className="fw-bold me-2" htmlFor="entreFechas">Entre 2 fechas</Form.Label>
+                                <Form.Label className="fw-bold me-2" htmlFor="fecha1">Desde</Form.Label>
                                 <Form.Control type="date"
                                               className="me-2"
                                               value={filtro.fecha1}
-                                              id="entreFechas"
+                                              id="fecha1"
                                               name="fecha1"
                                               style={{ width: '150px' }}
                                               onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                              isInvalid={!!filtro.error.fecha}
                                 />
+                                <Form.Label className="fw-bold me-2" htmlFor="fecha2">Hasta</Form.Label>
                                 <Form.Control type="date"
                                               value={filtro.fecha2}
+                                              id="fecha2"
                                               name="fecha2"
                                               style={{ width: '150px' }}
                                               onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                              isInvalid={!!filtro.error.fecha}
                                 />
+                                <Form.Control.Feedback type='invalid'>
+                                    {filtro.error.fecha}
+                                </Form.Control.Feedback>
                             </Col>
                         </div>
                         <div className="row mb-4">
                             <Col className="d-flex align-items-center">
-                                <Form.Label className="fw-bold me-2" htmlFor="fechaConcreta">Fecha concreta</Form.Label>
-                                <Form.Control type="date"
-                                              value={filtro.fecha1}
-                                              id="fechaConcreta"
-                                              name="fecha1"
-                                              style={{ width: '150px' }}
-                                              onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                                />
-                            </Col>
-                        </div>
-                        <div className="row mb-4">
-                            <Col className="d-flex align-items-center">
-                                <Form.Label className="fw-bold me-2" htmlFor="entreHoras">Entre 2 horas</Form.Label>
+                                <Form.Label className="fw-bold me-2" htmlFor="hora1">Desde</Form.Label>
                                 <Form.Control type="time"
                                               value={filtro.hora1}
-                                              id="entreHoras"
+                                              id="hora1"
                                               name="hora1"
                                               style={{ width: '100px' }}
                                               onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
                                               className="me-2"
+                                              isInvalid={!!filtro.error.hora}
                                 />
+                                <Form.Label className="fw-bold me-2" htmlFor="hora2">Hasta</Form.Label>
                                 <Form.Control type="time"
                                               value={filtro.hora2}
+                                              id="hora2"
                                               name="hora2"
                                               style={{ width: '100px' }}
                                               onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
                                               className="me-2"
+                                              isInvalid={!!filtro.error.hora}
                                 />
-                            </Col>
-                        </div>
-                        <div className="row mb-4">
-                            <Col className="d-flex align-items-center">
-                                <Form.Label className="fw-bold me-2" htmlFor="horaConcreta">Hora concreta</Form.Label>
-                                <Form.Control type="time"
-                                              value={filtro.hora1}
-                                              id="horaConcreta"
-                                              name="hora1"
-                                              style={{ width: '100px' }}
-                                              onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                                              className="me-2"
-                                />
+                                <Form.Control.Feedback type='invalid'>
+                                    {filtro.error.hora}
+                                </Form.Control.Feedback>
                             </Col>
                         </div>
                         <div className="row mb-4">
@@ -133,7 +143,7 @@ const FormTrafico = ({ handleFilter }) => {
                                 />
                             </Col>
                             <Col className="mb-sm-2 mb-2">
-                                <input className="btn"
+                                <input className="btn btn-rojo"
                                        type="button"
                                        onClick={limpiarFiltro}
                                        value='Limpiar filtro'

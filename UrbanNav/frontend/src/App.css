@@ -36,6 +36,27 @@ html, body {
   padding: 0 !important;
 }
 
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+button,
+label {
+  font-family: 'Roboto', sans-serif; /* Ejemplo de estilo */
+  font-size: 16px; /* Ejemplo de estilo */
+  color: #333; /* Ejemplo de estilo */
+}
+
+.active {
+  font-weight: bold !important;
+  color: var(--claro) !important;
+}
+
+
 .App {
   text-align: center;
 }
@@ -127,8 +148,14 @@ html, body {
   margin-right: 1rem;
 }
 
+.canvas {
+  background: rgb(193,200,215) !important;
+  background: linear-gradient(66deg, rgba(193,200,215,1) 77%, rgba(174,182,197,1) 100%) !important;
+}
+
 .card {
   background-color: #C1C8D7 !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 .legend {
@@ -147,6 +174,16 @@ html, body {
 .link-custom,
 .link-custom .dropdown-toggle {
   color: var(--oscuro) !important;
+  font-weight: bold;
+}
+
+.link-custom.active {
+  color: var(--claro) !important; /* Color azul por ejemplo */
+  font-weight: bold;
+}
+
+.link-custom.active:hover {
+  color: var(--claro-alpha) !important; /* Color azul por ejemplo */
   font-weight: bold;
 }
 

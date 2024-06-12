@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Table, Pagination, Form } from "react-bootstrap";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
@@ -6,6 +6,8 @@ const DynamicTable = ({ data, columns }) => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+
+    console.log('Data 0 = ' + JSON.stringify(data[0]))
 
     const onSort = (columnKey) => {
         let direction = 'asc';
@@ -63,6 +65,10 @@ const DynamicTable = ({ data, columns }) => {
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
     };
+
+    useEffect(() => {
+        console.log(JSON.stringify(paginatedData))
+    }, [])
 
     const getPageNumbers = () => {
         const pages = [];

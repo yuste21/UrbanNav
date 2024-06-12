@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 
-import InicioBloque from './pages/Inicio';
+import Inicio from './inicio/Inicio';
 import Estacionamientos from './estacionamientos/Estacionamientos';
 import Accidentes from './accidentes/Accidentes';
 import Trafico from './trafico/Trafico';
@@ -22,7 +22,7 @@ function App() {
           <Route path='/flujo' element={<Flujo/>} />
           <Route path='/radares' element={<Radares/>} />
           <Route path='/multas' element={<Multas/>} />
-          <Route path='/' element={<InicioBloque/>} />
+          <Route path='/' element={<Inicio/>} />
         </Routes>
       </BrowserRouter>
     </div>

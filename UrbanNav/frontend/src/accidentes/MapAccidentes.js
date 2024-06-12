@@ -26,6 +26,11 @@ const MapAccidentes = ({handleFilter,
 
     //Filtro
     const filtro = useSelector(state => state.accidentes.filtro)
+    const [filtroAplicado, setFiltroAplicado] = useState([])
+    useEffect(() => {
+        setFiltroAplicado(filtroString(filtro))
+    }, [])
+
     const [showForm, setShowForm] = useState(false)
     const handleClose = () => setShowForm(false);
     const handleShow = () => setShowForm(true);
@@ -34,47 +39,73 @@ const MapAccidentes = ({handleFilter,
     const filtroString = (filtro) => {
         let resultado = []
         for(let key in filtro) {
-            if(filtro[key] && key !== 'filtrado') {
+            if(filtro[key] && key !== 'filtrado' && key !== '' && key !== 'error' && 
+                !key.includes('fecha') && !key.includes('hora') && !key.includes('edad')) {
+
                 let valor
                 let clave
-                if(key !== 'radio' && key !== '') {   //Ignoro el atributo radio
-                    if(filtro[key] === '1') {
-                        clave = key + ': '
-                        valor = 'positivo'
-                    } else if(filtro[key] === '0') {
-                        clave = key + ': '
-                        valor = 'negativo'
-                    } else if(key === 'hora1' && filtro.hora2 === '') {
-                        clave = 'hora concreta: '
-                        valor = `${filtro.hora1.split(':')[0]}:${filtro.hora1.split(':')[1]} | ${filtro.hora2}`
-                    } else if(key === 'hora2') {
-                        clave = 'franja horaria: '
-                        valor = `${filtro.hora1} - ${filtro.hora2}`
-                    } else if(key === 'fecha1' && filtro.fecha2 === '') {
-                        clave = 'fecha concreta: '
-                        valor = filtro.fecha1 + ''
-                    } else if(key === 'fecha2') {
-                        clave = 'entre fechas: '
-                        valor = `desde el ${filtro.fecha1} hasta el ${filtro.fecha2}`
-                    } else if(key === 'hora1') {
-                        clave = ''
-                        valor = ''
-                    } else if(key === 'fecha1') {
-                        clave = ''
-                        valor = ''
-                    } else if (key === 'zonas' && filtro[key].activo === true) {
-                        clave = `${filtro[key].tipo} `
-                        valor = `${filtro[key].nombre}`
-                    } else if (key !== 'zonas') {
-                        clave = key + ': '
-                        valor = filtro[key] + ''
-                    } else {
-                        clave = ''
-                        valor = ''
-                    }
-                    resultado.push(clave + valor)
+                if (filtro[key] === '1') {
+                    clave = key + ': '
+                    valor = 'positivo'
+                } else if (filtro[key] === '0') {
+                    clave = key + ': '
+                    valor = 'negativo'
+                } else if (key === 'radio' && filtro[key].activo) {
+                    clave = 'radio de '
+                    valor = `${filtro[key].distancia} metros`
+                } else if (key === 'zonas' && filtro[key].activo === true) {
+                    clave = `${filtro[key].tipo} `
+                    valor = `${filtro[key].nombre}`
+                } else if (key !== 'zonas') {
+                    clave = key + ': '
+                    valor = filtro[key] + ''
+                } else {
+                    clave = ''
+                    valor = ''
                 }
+                resultado.push(clave + valor)
             }
+        }
+
+        if (filtro.fecha1 !== '' && filtro.fecha2 !== '') {
+            if (filtro.fecha1 === filtro.fecha2) {
+                resultado.push(`Fecha: ${filtro.fecha1}`)
+            } else {
+                resultado.push(`Fecha: desde el ${filtro.fecha1} hasta el ${filtro.fecha2}`)
+            }
+        } else if (filtro.fecha1 !== '') {
+            resultado.push(`Fecha: desde el ${filtro.fecha1}`)
+
+        } else if (filtro.fecha2 !== '') {
+            resultado.push(`Fecha: hasta el ${filtro.fecha2}`)
+
+        }
+        
+
+        if (filtro.hora1 !== '' && filtro.hora2 !== '') {
+            if (filtro.hora1 === filtro.hora2) {
+                resultado.push(`Hora: ${filtro.hora1}`)
+            } else {
+                resultado.push(`Hora: desde ${filtro.hora1} hasta ${filtro.hora2}`)
+            }
+        } else if (filtro.hora1 !== '') {
+            resultado.push(`Hora: desde ${filtro.hora1}`)
+
+        } else if (filtro.hora2 !== '') {
+            resultado.push(`Hora: hasta ${filtro.hora2}`)
+
+        }
+
+        if (filtro.edad1 !== '' && filtro.edad2 !== '') {
+            if (filtro.edad1 === filtro.edad2) {
+                resultado.push(`Edad: ${filtro.edad1} años`)
+            } else {
+                resultado.push(`Edad: entre ${filtro.edad1} y ${filtro.edad2} años`)
+            }
+        } else if (filtro.edad1 !== '') {  
+            resultado.push(`Edad: más de ${filtro.edad1} años`)
+        } else if (filtro.edad2 !== '') {
+            resultado.push(`Edad: menos de ${filtro.edad2} años`)
         }
 
         return resultado
@@ -84,7 +115,7 @@ const MapAccidentes = ({handleFilter,
         <Popover id='popover'>
             <Popover.Header as="h4">Filtro aplicado</Popover.Header>
             <Popover.Body className='popover-body'>
-            {filtroString(filtro).map((el, index) => (
+            {filtroAplicado.map((el, index) => (
                 <p key={index}>{el}</p>
             ))}
             </Popover.Body>
@@ -172,7 +203,8 @@ const MapAccidentes = ({handleFilter,
             var filtradoString = filtrado.length > 0 ? `${filtrado[0]}` : ''
             setActivateOverlay(filtradoString + ' ' + selectedOverlay)
             }
-        }    };
+        }    
+    };
 
     return(
         <> 
@@ -410,7 +442,7 @@ const MapAccidentes = ({handleFilter,
                             <i class="bi bi-filter"></i>
                         </button>
                     }
-                    <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }}>
+                    <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }} className="canvas">
                         <Offcanvas.Body>
                             <FormAccidentes handleFilter={handleFilter}
                                             handleClose={handleClose}

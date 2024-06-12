@@ -88,7 +88,7 @@ export const getLesividad = async (req, res) => {
 
 export const getAllAccidentes = async (req, res) => {
     try {
-        /*
+        
         const accidentes = await AccidenteModel.findAll({
             include: [
                 { model: SexoModel },
@@ -98,9 +98,10 @@ export const getAllAccidentes = async (req, res) => {
                 { model: LesividadModel },
                 { model: ClimaModel }
             ]
-        });*/
-        const accidentes = await AccidenteModel.findAll()
-
+        });
+        
+        //const accidentes = await AccidenteModel.findAll()
+        
         res.json(accidentes)
     } catch (error) {
         console.log('Error en la consulta getAllAccidentes: ', error)
@@ -840,7 +841,7 @@ export async function accidentesAux(accidentesId) {
                 clima: 0.2,
                 edad: 0.1
             }
-            const FACTOR_RIESGO = 0.3
+            const FACTOR_RIESGO = 3
             const normalizacionPonderacion = (value, max, weight) => (value / max) * 100 * weight
 
             /**
@@ -1425,57 +1426,65 @@ function toRadians(grados) {
 
 export const filtro = async (req, res) => {
     try {
-        const { fecha1, fecha2, hora1, hora2, edad1, edad2, vehiculo, drogas, alcohol, lesion, persona, sexo, accidente, clima, radio, lat, lon } = req.query
+        const { fecha1, fecha2, hora1, hora2, edad1, edad2, vehiculo, drogas, alcohol, 
+                lesion, persona, sexo, accidente, clima, radio, lat, lon 
+        } = req.query
         //const { drogas, alcohol, vehiculo, sexo, clima } = req.query
         let whereConditions = {}
 
         if (fecha1 !== '' && fecha2 !== '') {
-            var fechaInicio, fechaFin
-            if (fecha1 <= fecha2) {
-                fechaInicio = fecha1
-                fechaFin = fecha2
+            if (fecha1 === fecha2) {
+                whereConditions.fecha = fecha1
             } else {
-                fechaInicio = fecha2
-                fechaFin = fecha1
-            }
-
-            whereConditions.fecha = {
-                [Op.between]: [fechaInicio, fechaFin]
+                whereConditions.fecha = {
+                    [Op.between]: [fecha1, fecha2]
+                }
             }
 
         } else if (fecha1 !== '') {
-            whereConditions.fecha = fecha1
+            whereConditions.fecha = {
+                [Op.gte]: fecha1
+            }
+        } else if (fecha2 !== '') {
+            whereConditions.fecha = {
+                [Op.lte]: fecha2
+            }
         }
 
         if (hora1 !== '' && hora2 !== '') {
-            var horaInicio, horaFin
-            if (hora1 <= hora2) {
-                horaInicio = hora1
-                horaFin = hora2
+            if (hora1 === hora2) {
+                whereConditions.hora = hora1    
             } else {
-                horaInicio = hora2
-                horaFin = hora1
-            }
-
-            whereConditions.hora = {
-                [Op.between]: [horaInicio, horaFin]
+                whereConditions.hora = {
+                    [Op.between]: [hora1, hora2]
+                }   
             }
         } else if (hora1 !== '') {
-            whereConditions.hora = hora1
+            whereConditions.hora = {
+                [Op.gte]: hora1
+            }
+        } else if (hora2 !== '') {
+            whereConditions.hora = {
+                [Op.lte]: hora2
+            }
         }
 
         if (edad1 !== '' && edad2 !== '') {
-            var edadMin, edadMax
-            if (edad1 <= edad2) {
-                edadMin = edad1
-                edadMax = edad2
+            if (edad1 === edad2) {
+                whereConditions.edad = edad1
             } else {
-                edadMin = edad2
-                edadMax = edad1
-            }
 
+                whereConditions.edad = {
+                    [Op.between]: [edad1, edad2]
+                }
+            }
+        } else if (edad1 !== '') {
             whereConditions.edad = {
-                [Op.between]: [edadMin, edadMax]
+                [Op.gte]: edad1
+            }
+        } else if (edad2 !== '') {
+            whereConditions.edad = {
+                [Op.lte]: edad2
             }
         }
 

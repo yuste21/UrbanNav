@@ -1,23 +1,6 @@
-import { Sequelize } from "sequelize";
-import { config as dotenvConfig } from 'dotenv';
-dotenvConfig();
-
-// const db = new Sequelize('urban_nav', 'root', 'root', {
-//     host: 'localhost',
-//     dialect: 'mysql',
-//     dialectOptions: {
-//         connectTimeout: 480000, // 8 minutos de espera 
-//     },
-//     pool: {
-//         max: 20, // Numero máximo de conexiones simultaneas a la bd
-//         min: 0,
-//         acquire: 30000,
-//         idle: 20000,
-//         acquireTimeout: 60000 // Aumenta el tiempo de espera de la adquisición de conexión
-//     },
-//     logging: console.log
-// })
-
+import Sequelize from "sequelize";
+import dotenv from 'dotenv';
+dotenv.config();
 
 const db = new Sequelize(`${process.env.DB_CONNECTION}`, {
     host: `${process.env.DB_HOST}`,
@@ -39,5 +22,22 @@ const db = new Sequelize(`${process.env.DB_CONNECTION}`, {
     logging: console.log
 })
 
-
 export default db
+
+
+// const db = new Sequelize('urban_nav', 'root', 'root', {
+//     host: 'localhost',
+//     dialect: 'mysql',
+//     dialectOptions: {
+//         connectTimeout: 480000, // 8 minutos de espera 
+//     },
+//     pool: {
+//         max: 20, // Numero máximo de conexiones simultaneas a la bd
+//         min: 0,
+//         acquire: 30000,
+//         idle: 20000,
+//         acquireTimeout: 60000 // Aumenta el tiempo de espera de la adquisición de conexión
+//     },
+//     logging: console.log
+// })
+

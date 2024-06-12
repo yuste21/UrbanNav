@@ -11,7 +11,11 @@ export const initialFilter = {
         nombre: '',
         tipo: 'previos'
     },
-    plazas: 0,
+    plazas1: '',
+    plazas2: '',
+    error: {
+        plazas: ''
+    },
     filtrado: false
 }
 
@@ -34,7 +38,8 @@ export const getDataEstacionamientosInicio = createAsyncThunk('estacionamientos/
 export const getDataEstacionamientosFiltro = createAsyncThunk('estacionamientos/getEstacionamientosFiltro', async (req, res) => {
     const filtro = req.filtro
     return axios 
-        .get(`${URIsEstacionamientos.filtro}?color=${filtro.color}&tipo=${filtro.tipo}&plazas=${filtro.plazas}`)
+        .get(`${URIsEstacionamientos.filtro}?color=${filtro.color}&tipo=${filtro.tipo}` +
+            `&plazas1=${filtro.plazas1}&plazas2=${filtro.plazas2}`)
         .then((response) => response.data)
 })
 
@@ -45,10 +50,22 @@ export const estacionamientoSlice = createSlice({
         handleChange: (state, action) => {
             const { name, value } = action.payload
 
+            let error = { ...state.filtro.error }
+            if (name === 'plazas1') {
+                error.plazas = state.filtro.plazas2 !== '' && parseInt(value) > parseInt(state.filtro.plazas2)
+                                ? 'El mínimo de plazas no puede ser mayor al máximo'
+                                : ''
+            } else if (name === 'plazas2') {
+                error.plazas = state.filtro.plazas1 !== '' && parseInt(value) < parseInt(state.filtro.plazas1)
+                ? 'El máximo de plazas no puede ser menor al mínimo'
+                : ''
+            }
+
             return {
                 ...state,
                 filtro: {
                     ...state.filtro,
+                    error: error,
                     [name]: value
                 }
             }
@@ -121,14 +138,10 @@ export const estacionamientoSlice = createSlice({
                 state.loading = true
             })
             .addCase(getDataEstacionamientosFiltro.fulfilled, (state, action) => {
-                if (action.payload.estacionamientos.length > 500) {
-                    state.dataEstacionamientos.distritos = action.payload.distritos
-                    state.dataEstacionamientos.barrios = action.payload.barrios
-                } else {
-                    state.dataEstacionamientos.distritos = []
-                    state.dataEstacionamientos.barrios = []
-                }
+                state.dataEstacionamientos.distritos = action.payload.distritos
+                state.dataEstacionamientos.barrios = action.payload.barrios
                 state.dataEstacionamientos.estacionamientos = action.payload.estacionamientos
+                console.log('Length = ' + action.payload.estacionamientos.length)
                 state.loading = false
             })
             .addCase(getDataEstacionamientosFiltro.rejected, (state, action) => {

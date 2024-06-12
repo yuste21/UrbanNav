@@ -5,6 +5,12 @@ import { URIsAccidentes } from "../../accidentes/URIsAccidentes"
 
 const center = [40.41688189428294, -3.703318510771146]
 
+export const initialError = {
+    fecha: '',
+    hora: '',
+    edad: ''
+}
+
 export const initialFilter = {
     fecha1: '',
     fecha2: '',
@@ -31,6 +37,7 @@ export const initialFilter = {
         nombre: '',
         tipo: 'previos'
     },
+    error: initialError,
     filtrado: false
 }
 
@@ -120,11 +127,37 @@ export const dataAccidenteSlice = createSlice({
                     }
                 }
             } else {
-
+                var error = { ...state.filtro.error }
+                if (name === 'fecha1') {
+                    error.fecha = state.filtro.fecha2 !== '' && value > state.filtro.fecha2 
+                                    ? 'La fecha de inicio no puede ser posterior a la de fin'
+                                    : ''
+                } else if (name === 'fecha2') {
+                    error.fecha = state.filtro.fecha1 !== '' && value < state.filtro.fecha1
+                        ? 'La fecha de fin no puede ser anterior a la de inicio'
+                        : ''
+                } else if (name === 'edad1') {
+                    error.edad = state.filtro.edad2 !== '' && parseInt(value) > parseInt(state.filtro.edad2)
+                        ? 'La edad de inicio no puede ser posterior a la de fin'
+                        : ''
+                } else if (name === 'edad2') {
+                    error.edad = state.filtro.edad1 !== '' && parseInt(value) < parseInt(state.filtro.edad1)
+                        ? 'La edad de fin no puede ser anterior a la de inicio'
+                        : ''
+                } else if (name === 'hora1') {
+                    error.hora = state.filtro.hora2 !== '' && value > state.filtro.hora2
+                        ? 'La hora de inicio no puede ser posterior a la de fin'
+                        : ''
+                } else if (name === 'hora2') {
+                    error.hora = state.filtro.hora1 !== '' && value < state.filtro.hora1
+                        ? 'La hora de fin no puede ser anterior a la de inicio'
+                        : ''
+                }
                 return {
-                    ...state, 
+                    ...state,
                     filtro: {
                         ...state.filtro,
+                        error: error,
                         [name]: value
                     }
                 }

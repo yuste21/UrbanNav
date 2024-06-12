@@ -32,8 +32,6 @@ const Flujo = () => {
     }, [entidad, tipo])
 
     useEffect(() => {
-        console.log('Effect 2 | info = ' + info + ' | tipo = ' + tipo)
-        console.log(tipo.split(' ')[0] + ' ' + tipo.split(' ').length)
         if (tipo && info && dataFlujo !== initialDataFlujo) {
             setEntidad(dataFlujo)
         }
@@ -188,11 +186,11 @@ const Flujo = () => {
                             </ResponsiveContainer>
                         </div>
                         <div className="col-lg-12 col-xl-4">
-                            {centro && centro.length === 2 &&
+                            {centro && centro.length === 2 && centro === entidad.centro &&
                                 <div className="card mb-4">
                                     <div className="card-body">
                                         <MapContainer center={centro}
-                                                    zoom={13}
+                                                    zoom={12}
                                                     style={{ height: '300px', width: '100%', borderRadius: '10px' }}
                                                     className="shadow"
                                         >

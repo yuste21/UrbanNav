@@ -47,6 +47,7 @@ function Accidentes () {
     } 
 
     //Charts
+    const [icon, setIcon] = useState('bi bi-bar-chart')
     const [showCharts, setShowCharts] = useState(false)
     const [datosAgrupados, setDatosAgrupados] = useState([])
     const [agrupacion, setAgrupacion] = useState('')
@@ -114,21 +115,23 @@ function Accidentes () {
                             <div className={colCharts}>
                                 {showCharts === false ?
                                     <>
-                                        <Button className="btn-azul mt-3"
+                                        <button className="btn mt-3"
                                                 onClick={() => {
                                                     obtenerDatosGrafica('clima.clima', 'Bar')
                                                     obtenerDatosGrafica('tipo_accidente.tipo_accidente', 'Pie')
                                                     setShowCharts(true)
                                                 }}
+                                                onMouseEnter={() => setIcon('bi bi-bar-chart-fill')}
+                                                onMouseLeave={() => setIcon('bi bi-bar-chart')}
                                                 aria-controls="example-collapse-text"
                                         >
-                                            Mostrar estadísticas
-                                        </Button> <br/>
+                                            <i className={icon}></i>
+                                        </button> <br/>
 
                                     </>
                                 :  
                                     <>
-                                        <button className="btn btn-rojo mb-3 mt-3"
+                                        <button className="btn mb-3 mt-3"
                                                 onClick={() => setShowCharts(false)}
                                         >
                                             Ocultar estadísticas

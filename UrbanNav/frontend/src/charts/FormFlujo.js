@@ -3,10 +3,12 @@ import { handleChange,
         getFlujoAccidenteDistritoFecha, getFlujoAccidenteDistritoHora,
         getFlujoAccidenteBarrioFecha, getFlujoAccidenteBarrioHora,
         getFlujoTraficoDistritoFecha, getFlujoTraficoDistritoHora, 
-        getFlujoTraficoEstacionFecha, getFlujoTraficoEstacionHora
+        getFlujoTraficoEstacionFecha, getFlujoTraficoEstacionHora,
+        vaciarFiltro
  } from "../features/flujo/dataFlujoSlice"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
+import { useState } from 'react'
 
 const FormFlujo = ({ entidad, tipo }) => {
     //const { form, handleSubmit, handleChange } = useFormFlujo(initialForm, setLoading)
@@ -14,6 +16,7 @@ const FormFlujo = ({ entidad, tipo }) => {
     const dispatch = useDispatch()
     const filtro = useSelector(state => state.flujo.filtro)
     const navigate = useNavigate()
+    const [validated, setValidated] = useState(false)
 
     //entidad será el objeto correspondiente: estacion, distrito o barrio
     //tipo nos indica que objeto de los 2 es aforo
@@ -32,8 +35,12 @@ const FormFlujo = ({ entidad, tipo }) => {
         } else if(filtro.fecha1 === '' && filtro.fecha2 === '' && filtro.hora1 === '' && filtro.hora2 === '') {
             alert('Datos incompletos')
             return
+        } else if (filtro.error.hora !== '' || filtro.error.fecha !== '') {
+            setValidated(false)
+            return
         }
 
+        setValidated(true)
         var info, data
         var tipo_dato = tipo
         if(tipo === 'estacion') {
@@ -72,23 +79,18 @@ const FormFlujo = ({ entidad, tipo }) => {
             }
         }
         
-
-        //setTrafico(data.trafico)
-        //setInfo(info)
-        //setShowChart(true)
-        //setLoading(false)
         navigate('/flujo', { state: { info: info, tipo: tipo_dato } })
 
     }
 
     return(
         <>
-            <Form onSubmit={(event) => handleSubmit(event, entidad, tipo)}>
+            <Form noValidate validated={validated} onSubmit={(event) => handleSubmit(event, entidad, tipo)}>
                 <div className="row mb-4">
                     <Form.Group as={Col}
                                 className="d-flex align-items-center"
                     >
-                        <Form.Label className="fw-bold me-2">Entre 2 fechas</Form.Label>
+                        <Form.Label className="fw-bold me-2" htmlFor='fecha1'>Desde</Form.Label>
                         <Form.Control type="date"
                                       id="fecha1"
                                       name="fecha1"
@@ -96,22 +98,27 @@ const FormFlujo = ({ entidad, tipo }) => {
                                       style={{ width: '150px' }}
                                       onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                                       className="me-2"
+                                      isInvalid={!!filtro.error.fecha}
                         />
+                        <Form.Label className="fw-bold me-2" htmlFor='fecha2'>Hasta</Form.Label>
                         <Form.Control type="date"
                                       id="fecha2"
                                       name="fecha2"
                                       value={filtro.fecha2}
                                       style={{ width: '150px' }}
                                       onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                      isInvalid={!!filtro.error.fecha}
                         />
-                        
+                        <Form.Control.Feedback type='invalid'>
+                            {filtro.error.fecha}
+                        </Form.Control.Feedback>
                     </Form.Group>
                 </div>
                 <div className="row mb-4">
                     <Form.Group as={Col}
                                 className="d-flex align-items-center"
                     >
-                        <Form.Label className="fw-bold me-2">Entre 2 horas</Form.Label>
+                        <Form.Label className="fw-bold me-2" htmlFor='hora1'>Desde</Form.Label>
                         <Form.Control type="time"
                                       id="hora1"
                                       name="hora1"
@@ -119,17 +126,24 @@ const FormFlujo = ({ entidad, tipo }) => {
                                       style={{ width: '100px' }}
                                       onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                                       className="me-2"
+                                      isInvalid={!!filtro.error.hora}
                         />
+                        <Form.Label className="fw-bold me-2" htmlFor='hora2'>Hasta</Form.Label>
                         <Form.Control type="time"
                                       id="hora2"
                                       name="hora2"
                                       value={filtro.hora2}
                                       style={{ width: '100px' }}
                                       onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                      isInvalid={!!filtro.error.hora}
                         />
+                        <Form.Control.Feedback type='invalid'>
+                            {filtro.error.hora}
+                        </Form.Control.Feedback>
                     </Form.Group>
                 </div>
-                <input type='submit' className='btn btn-azul' />
+                <input type='submit' className='btn btn-azul me-2' />
+                <button type='button' className='btn btn-rojo' onClick={() => dispatch(vaciarFiltro())}>Limpiar filtro</button>
             </Form>
         </>
     )

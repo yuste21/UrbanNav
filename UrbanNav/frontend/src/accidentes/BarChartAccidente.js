@@ -2,7 +2,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, Respons
 
 const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) => {
     return(
-        <>
+        <>  
+            <p>Estadísticas de los implicados</p>
             {datosAgrupados.length > 0 && 
                 <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={datosAgrupados}>

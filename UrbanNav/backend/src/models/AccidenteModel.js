@@ -16,6 +16,14 @@ export const SexoModel = db.define('sexos', {
     sexo: { type: DataTypes.ENUM('Mujer', 'Hombre', 'Desconocido') }
 })
 
+SexoModel.hasMany(AccidenteModel, {
+    foreignKey: 'sexoId',
+    as: 'sexos'
+})
+AccidenteModel.belongsTo(SexoModel, {
+    foreignKey: 'sexoId'
+})
+
 export const Tipo_AccidenteModel = db.define('tipo_accidentes', {
     tipo_accidente: { type: DataTypes.ENUM(
         'Colisión doble',
@@ -86,13 +94,7 @@ export const LesividadModel = db.define('lesividades', {
 
 })
 
-SexoModel.hasMany(AccidenteModel, {
-    foreignKey: 'sexoId',
-    as: 'sexos'
-})
-AccidenteModel.belongsTo(SexoModel, {
-    foreignKey: 'sexoId'
-})
+
 
 //--------------------------------------------------------//
 

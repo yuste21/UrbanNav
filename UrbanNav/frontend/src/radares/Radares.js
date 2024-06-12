@@ -34,6 +34,13 @@ function Radares () {
             setLeftCol('col-1')
         }
     }, [showBarChart, showTable])
+    
+    //Icono chart
+    const [icon, setIcon] = useState('bi bi-bar-chart')
+
+    const radaresCharts = () => {
+        return radares.filter(el => el.multas > 0)
+    }
 
     //Filtro
     const filtro = useSelector(state => state.radares.filtro)
@@ -48,6 +55,12 @@ function Radares () {
             setShowForm(false)
         }
     }
+
+    //Filtro aplicado
+    const [filtroAplicado, setFiltroAplicado] = useState([])
+    useEffect(() => {
+        setFiltroAplicado(filtroString(filtro))
+    }, [])
 
     const filtroString = (filtro) => {
         let resultado = []
@@ -106,7 +119,7 @@ function Radares () {
         <Popover id='popover'>
             <Popover.Header as="h4">Filtro aplicado</Popover.Header>
             <Popover.Body className='popover-body'>
-            {filtroString(filtro).map((el, index) => (
+            {filtroAplicado.map((el, index) => (
                 <p key={index}>{el}</p>
             ))}
             </Popover.Body>
@@ -114,9 +127,6 @@ function Radares () {
     );
 
 
-    const radaresCharts = () => {
-        return radares.filter(el => el.multas > 0)
-    }
 
     //Tabla
     const dataTable = () => {
@@ -182,7 +192,7 @@ function Radares () {
                                         }
                                     </>
                                 }
-                                <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }}>
+                                <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }} className="canvas">
                                     <Offcanvas.Body>
                                         <FormRadares handleFilter={handleFilter}
                                                     handleClose={handleClose}
@@ -193,7 +203,7 @@ function Radares () {
                                     <>
                                         {/* BarChart */}
                                         <div className="row">
-                                            <button className="btn btn-azul mt-3"
+                                            <button className="btn mt-3"
                                                 onClick={() => {
                                                     setShowBarChart(false)
                                                     setSelectedRadar(null)
@@ -210,13 +220,15 @@ function Radares () {
                                         
                                     </>
                             :
-                                    <button className="btn btn-azul mt-3"
+                                    <button className="btn mt-3"
                                             onClick={() => {
                                                 setShowBarChart(true)
                                                 setShowTable(true)
                                             }}
+                                            onMouseEnter={() => setIcon('bi bi-bar-chart-fill')}
+                                            onMouseLeave={() => setIcon('bi bi-bar-chart')}
                                     >
-                                        Mostrar Grafica
+                                        <i className={icon}></i>
                                     </button>
                             }
                             

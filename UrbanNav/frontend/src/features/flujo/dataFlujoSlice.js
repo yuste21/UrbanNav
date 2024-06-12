@@ -7,7 +7,11 @@ export const initialFilter = {
     fecha1: '',
     fecha2: '',
     hora1: '',
-    hora2: ''
+    hora2: '',
+    error: {
+        hora: '',
+        fecha: ''
+    }
 }
 
 /**
@@ -97,12 +101,39 @@ export const dataFlujoSlice = createSlice({
     reducers: {
         handleChange: (state, action) => {
             const { name, value } = action.payload
+
+            let error = { ...state.filtro.error }
+            if (name === 'hora1') {
+                error.hora = state.filtro.hora2 !== '' && value > state.filtro.hora2 
+                            ? 'Horas inválidas'
+                            : ''
+            } else if (name === 'hora2') {
+                error.hora = state.filtro.hora1 !== '' && value < state.filtro.hora1
+                            ? 'Horas inválidas'
+                            : ''
+            } else if (name === 'fecha1') {
+                error.fecha = state.filtro.fecha2 !== '' && value > state.filtro.fecha2 
+                                ? 'Fechas inválidas'
+                                : ''
+            } else if (name === 'fecha2') {
+                error.fecha = state.filtro.fecha1 !== '' && value < state.filtro.fecha1
+                                ? 'Fechas inválidas'
+                                : ''
+            }
+ 
             return {
                 ...state,
                 filtro: {
                     ...state.filtro,
+                    error: error,
                     [name]: value
                 }
+            }
+        },
+        vaciarFiltro: (state, action) => {
+            return {
+                ...state,
+                filtro: initialFilter
             }
         }
     },
@@ -265,6 +296,6 @@ export const dataFlujoSlice = createSlice({
     }
 })
 
-export const { handleChange } = dataFlujoSlice.actions
+export const { handleChange, vaciarFiltro } = dataFlujoSlice.actions
 
 export default dataFlujoSlice.reducer

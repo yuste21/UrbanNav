@@ -31,18 +31,11 @@ const MapTrafico = ({ activatedOverlay,
     const handleClose = () => setShowForm(false);
     const handleShow = () => setShowForm(true);
 
+    //Icono Chart
+    const [icon, setIcon] = useState('bi bi-bar-chart')
+
     //Centrar Mapa (Display Position)
     const [map, setMap] = useState(null)
-
-    //BarChart 
-    //Uso esta variable de estado para mostrar en el mapa la zona seleccionada en el BarChart
-    // const [barSelected, setBarSelected] = useState(selectedBar)
-    // useEffect(() => {
-    //     if(selectedBar !== null && JSON.stringify(selectedBar) !== '{}') {
-    //         //console.log('selectedBar payload = ' + JSON.stringify(selectedBar.activePayload[0].payload))
-    //         setBarSelected(selectedBar)
-    //     }
-    // }, [selectedBar])
     
     useEffect(() => {
         if(distritos.length === 0) {
@@ -120,11 +113,17 @@ const MapTrafico = ({ activatedOverlay,
         }
     }
     
+
     //Filtro aplicado
-    const filtroString = () => {
+    const [filtroAplicado, setFiltroAplicado] = useState([])
+    useEffect(() => {
+        setFiltroAplicado(filtroString(filtro))
+    }, [])
+
+    const filtroString = (filtro) => {
         let resultado = []
         for(let key in filtro) {
-            if(filtro[key] && key !== 'filtrado') {
+            if(filtro[key] && key !== 'filtrado' && key !== 'error' && !key.includes('hora') && !key.includes('fecha')) {
                 let valor
                 let clave
                 if(key === 'sentido') {
@@ -142,27 +141,41 @@ const MapTrafico = ({ activatedOverlay,
                 } else if(key === 'getAll') {
                     clave = 'Mostrando todo el trafico'
                     valor = '  '
-                } else if(key === 'hora1' && filtro.hora2 === '') {
-                    clave = 'Hora concreta: '
-                    valor = `${filtro.hora1.split(':')[0]}:00`
-                } else if(key === 'hora2') {
-                    clave = 'Franja horaria: '
-                    valor = `${filtro.hora1} - ${filtro.hora2}`
-                } else if(key === 'fecha1' && filtro.fecha2 === '') {
-                    clave = 'Fecha concreta: '
-                    valor = filtro.fecha1
-                } else if(key === 'fecha2') {
-                    clave = 'Entre fechas: '
-                    valor = `${filtro.fecha1} - ${filtro.fecha2}`
-                } else if(key === 'hora1') {
-                    clave = ''
-                    valor = ''
                 } else {
                     clave = key + ': '
                     valor = filtro[key]
                 }
                 resultado.push(clave + valor)
             }
+        }
+
+        if (filtro.fecha1 !== '' && filtro.fecha2 !== '') {
+            if (filtro.fecha1 === filtro.fecha2) {
+                resultado.push(`Fecha: ${filtro.fecha1}`)
+            } else {
+                resultado.push(`Fecha: desde el ${filtro.fecha1} hasta el ${filtro.fecha2}`)
+            }
+        } else if (filtro.fecha1 !== '') {
+            resultado.push(`Fecha: desde el ${filtro.fecha1}`)
+
+        } else if (filtro.fecha2 !== '') {
+            resultado.push(`Fecha: hasta el ${filtro.fecha2}`)
+
+        }
+        
+
+        if (filtro.hora1 !== '' && filtro.hora2 !== '') {
+            if (filtro.hora1 === filtro.hora2) {
+                resultado.push(`Hora: ${filtro.hora1}`)
+            } else {
+                resultado.push(`Hora: desde ${filtro.hora1} hasta ${filtro.hora2}`)
+            }
+        } else if (filtro.hora1 !== '') {
+            resultado.push(`Hora: desde ${filtro.hora1}`)
+
+        } else if (filtro.hora2 !== '') {
+            resultado.push(`Hora: hasta ${filtro.hora2}`)
+
         }
 
         return resultado
@@ -172,7 +185,7 @@ const MapTrafico = ({ activatedOverlay,
         <Popover id='popover'>
             <Popover.Header as="h4">Filtro aplicado</Popover.Header>
             <Popover.Body className='popover-body'>
-            {filtroString(filtro).map((el, index) => (
+            {filtroAplicado.map((el, index) => (
                 <p key={index}>{el}</p>
             ))}
             </Popover.Body>
@@ -193,11 +206,14 @@ const MapTrafico = ({ activatedOverlay,
                             Ocultar grafica
                         </button>
                     : (activatedOverlay.split(' ').includes('Distritos') || activatedOverlay.split(' ').includes('Barrios')) &&
-                        <button className='btn btn-morado mt-3'
+                        <button className='btn mt-3'
+                                onMouseEnter={() => setIcon('bi bi-bar-chart-fill')}
+                                onMouseLeave={() => setIcon('bi bi-bar-chart')}
                                 onClick={() => setShowBarChart(true)}
                         >
-                            Mostrar grafica de zonas más concurridas
+                            <i className={icon}></i>
                         </button>
+                  
                     }
                     {/* FILTRO */}
                     {!showForm && !showBarChart &&
@@ -206,7 +222,7 @@ const MapTrafico = ({ activatedOverlay,
                         </button>
                     }
                     {
-                        <Offcanvas show={showForm} onHide={handleClose} style={{ width: '500px' }}>
+                        <Offcanvas show={showForm} onHide={handleClose} style={{ width: '700px' }} className="canvas">
                             <Offcanvas.Body>
                                 <FormTrafico handleFilter={handleFilter}
                                             handleClose={handleClose}

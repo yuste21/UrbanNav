@@ -24,13 +24,6 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
     const [map, setMap] = useState(null)
     const [radaresPrev, setRadaresPrev] = useState([])
     const [activateOverlay, setActivateOverlay] = useState('Radares Distritos')
-    // useEffect(() => {
-    //     if(barrios.length === 0 && distritos.length === 0) {
-    //         setActivateOverlay('Radares')
-    //     } else {
-    //         setActivateOverlay('Distritos')
-    //     }
-    // }, [barrios, distritos])
 
     const handleOverlayChange = (selectedOverlay) => {
         var aux = activateOverlay.split(' ')
@@ -101,7 +94,7 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
                            checked={activateOverlay.includes('Barrios')}
                            onClick={() => handleOverlayChange('Barrios')}
                     />
-                    <label className="mb-2 me-2">Mostrar radares</label>
+                    <label className="mb-2 me-2">Radares</label>
                     <input type="checkbox"
                            checked={activateOverlay.includes('Radares')}
                            onClick={() => handleOverlayChange('Radares')}

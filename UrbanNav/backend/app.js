@@ -1,17 +1,18 @@
-import dotenv from 'dotenv'
-dotenv.config()
+import dotenv from 'dotenv';
+dotenv.config();
 
-import express from 'express'
-import cors from 'cors'
-import db from './db.js'
-import bodyParser from 'body-parser'
-import routerAccidente from './src/routes/routesAccidente.js'
-import routerEstacionamiento from './src/routes/routesEstacionamiento.js'
-import routerRadar from './src/routes/routesRadar.js'
-import routerTrafico from './src/routes/routesTrafico.js'
-import routerDistrito from './src/routes/routesDistrito.js'
-import routerBarrio from './src/routes/routesBarrio.js'
-import routerMultas from './src/routes/routesMultas.js'
+import express from 'express';
+import cors from 'cors';
+import db from './db.js';
+import bodyParser from 'body-parser';
+import routerAccidente from './src/routes/routesAccidente.js';
+import routerEstacionamiento from './src/routes/routesEstacionamiento.js';
+import routerRadar from './src/routes/routesRadar.js';
+import routerTrafico from './src/routes/routesTrafico.js';
+import routerDistrito from './src/routes/routesDistrito.js';
+import routerBarrio from './src/routes/routesBarrio.js';
+import routerMultas from './src/routes/routesMultas.js';
+
 
 const app = express()
 
@@ -31,10 +32,10 @@ app.use('/barrios', routerBarrio)
 app.use('/multas', routerMultas)
 
 try {
-    await db.authenticate()
-    console.log('Conexion a la base de datos exitosa')
+  await db.authenticate();
+  console.log('Conexion a la base de datos exitosa');
 } catch (error) {
-    console.log(`Error en la conexion a la base de datos: ${error}`)
+  console.error(`Error en la conexion a la base de datos: ${error}`);
 }
 
 app.get('/', (req,res) => {

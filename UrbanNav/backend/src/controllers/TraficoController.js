@@ -2,7 +2,7 @@ import { TraficoModel, OrientacionModel } from '../models/TraficoModel.js'
 import axios from 'axios' 
 import proj4 from 'proj4'   //Convertir coordenadas UTM en geograficas
 import csvParser from 'csv-parser'  //Leer archivo csv
-import { Sequelize, Op, fn, col } from 'sequelize'
+import { Sequelize, Op, fn, col, where } from 'sequelize'
 import { BarrioModel, DistritoModel } from '../models/DistritoModel.js'
 import { calcularPuntoMedio } from './DistritoController.js'
 import moment from 'moment'
@@ -706,51 +706,43 @@ export const filtro = async (req, res) => {
                 [Op.between]: [fechaInicial, fechaFinal]
             }
         } else if (fecha1 !== '' && fecha2 !== '') {
-            var fechaInicio
-            var fechaFin
-
-            if(fecha1 <= fecha2) {
-                fechaInicio = fecha1
-                fechaFin = fecha2
+            if (fecha1 === fecha2) {
+                whereConditions.fecha = fecha1
             } else {
-                fechaInicio = fecha2
-                fechaFin = fecha1
-            }
-
-            whereConditions.fecha = {
-                [Op.between]: [fechaInicio, fechaFin]
+                whereConditions.fecha = {
+                    [Op.between]: [fecha1, fecha2]
+                }
             }
         } else if (fecha1 !== '') {
-            whereConditions.fecha = fecha1
+            whereConditions.fecha = {
+                [Op.gte]: fecha1
+            }
+        } else if (fecha2 !== '') {
+            whereConditions.fecha = {
+                [Op.lte]:  fecha2
+            }
         }
 
         if (sentido !== '') {
             whereConditions['$orientacione.orientacion$'] = sentido
         }
 
-        var horaMin = new Date()
-        var aux1 = hora1.split(':')
-        var horaMax = new Date()
-        var aux2 = hora2.split(':')
         if (hora1 !== '' && hora2 !== '') {
-
-            if(hora1 < hora2) {
-                horaMin.setHours(parseInt(aux1[0]), parseInt(aux1[1]), 0)
-                horaMax.setHours(parseInt(aux2[0]), parseInt(aux2[1]), 0)
+            if (hora1 === hora2) {
+                whereConditions.hora = hora1
             } else {
-                horaMin.setHours(parseInt(hora2[0]), parseInt(hora2[1]), 0)
-                horaMax.setHours(parseInt(hora1[0]), parseInt(hora1[1]), 0)
-            }   
-            
-            horaMin = horaMin.getHours()
-            horaMax = horaMax.getHours()
+                whereConditions.hora = {
+                    [Op.between]: [hora1, hora2]
+                }
+            }
         } else if (hora1 !== '') {
-            horaMax = null
-            horaMin.setHours(aux1[0], aux1[1], 0)
-            horaMin = horaMin.getHours()
-        } else {
-            horaMin = null
-            horaMax = null
+            whereConditions.hora = {
+                [Op.gte]: hora1
+            }
+        } else if (hora2 !== '') {
+            whereConditions.hora = {
+                [Op.lte]: hora2
+            }
         }
 
         const trafico = await TraficoModel.findAll({

@@ -26,7 +26,7 @@ function Estacionamientos () {
         dispatch(getDataEstacionamientosInicio())
     }
 
-    const handleFilter = async () => {
+    const handleFilter = async (filtro) => {
         if (filtro !== initialFilter) {
             dispatch(getDataEstacionamientosFiltro({ filtro }))
         } else {

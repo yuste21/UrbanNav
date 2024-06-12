@@ -115,15 +115,28 @@ const MapEstacionamientos = ({ handleFilter }) => {
     //Tipo de zona seleccionada: distrito o barrio (LayersControl)
     const [activateOverlay, setActivateOverlay] = useState('Distritos')
     useEffect(() => {
-        if(barrios.length === 0 && distritos.length === 0) {
-            setActivateOverlay('Markers')
+        if((barrios.length === 0 && distritos.length === 0) || estacionamientos.length < 100) {
+            setActivateOverlay('Estacionamientos')
         } else {
             setActivateOverlay('Distritos')
         }
     }, [barrios, distritos])
 
     const handleOverlayChange = (selectedOverlay) => {
-        setActivateOverlay(activateOverlay === selectedOverlay ? '' : selectedOverlay)
+        var aux = activateOverlay.split(' ')
+        if(activateOverlay.includes(selectedOverlay)) {     //Desactivo checkbox
+            var filtrado = aux.filter(el => el !== selectedOverlay && el !== '')
+            setActivateOverlay(filtrado.length > 0 ? filtrado[0] : '')
+        } else {  //Activamos el checkbox selectedOverlay
+            
+            if(selectedOverlay === 'Estacionamientos') {  //Si selected es Estacionamientos no tengo que desactivar ningun checkbox
+                setActivateOverlay(activateOverlay + ' ' + selectedOverlay)
+            } else {    //En caso de que haya algun checkbox activado que no sea Estacionamientos lo desactivo
+            var filtrado = aux.filter(el => el === 'Estacionamientos')
+            var filtradoString = filtrado.length > 0 ? `${filtrado[0]}` : ''
+            setActivateOverlay(filtradoString + ' ' + selectedOverlay)
+            }
+        } 
     };
 
     return(
@@ -157,18 +170,28 @@ const MapEstacionamientos = ({ handleFilter }) => {
                                         Volver a mostrar las zonas
                                     </button>
                                 }
-                                {estacionamientos.length > 500 &&
+                                {distritos.length > 2 && !filtro.zonas.activo &&
                                     <>
                                         <label className="me-2">Distritos</label>
                                         <input type="checkbox"
-                                            checked={activateOverlay === 'Distritos'}
-                                            onClick={() => handleOverlayChange('Distritos')}
-                                            className="me-4"
+                                               checked={activateOverlay.includes('Distritos')}
+                                               onClick={() => handleOverlayChange('Distritos')}
+                                               className="me-4"
                                         />
                                         <label className="me-2">Barrios</label>
                                         <input type="checkbox"
-                                            checked={activateOverlay === 'Barrios'}
-                                            onClick={() => handleOverlayChange('Barrios')}
+                                               checked={activateOverlay.includes('Barrios')}
+                                               onClick={() => handleOverlayChange('Barrios')}
+                                               className="me-4"
+                                        />
+                                    </>
+                                }
+                                {estacionamientos.length < 500 && !filtro.zonas.activo &&
+                                    <>
+                                        <label className="me-2">Estacionamientos</label>
+                                        <input type="checkbox"
+                                               checked={activateOverlay.includes('Estacionamientos')}
+                                               onClick={() => handleOverlayChange('Estacionamientos')}
                                         />
                                     </>
                                 }
@@ -182,7 +205,7 @@ const MapEstacionamientos = ({ handleFilter }) => {
                                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                     />
-                                    {distritos.length > 0 && activateOverlay === 'Distritos' && (filtro.zonas.activo === false || filtro === initialFilter) && distritos.map((distrito, index) => (
+                                    {distritos.length > 2 && activateOverlay.includes('Distritos') && (filtro.zonas.activo === false || filtro === initialFilter) && distritos.map((distrito, index) => (
                                         <Polygon    key={index} 
                                                     ref={(el) => polygonDistritoRefs.current[index] = el}
                                                     eventHandlers={{
@@ -211,7 +234,7 @@ const MapEstacionamientos = ({ handleFilter }) => {
                                             </Popup>
                                         </Polygon>
                                     ))} 
-                                    {barrios.length > 0 && activateOverlay === 'Barrios' && (filtro.zonas.activo === false || filtro === initialFilter) && barrios.map((barrio, index) => (
+                                    {barrios.length > 0 && activateOverlay.includes('Barrios') && (filtro.zonas.activo === false || filtro === initialFilter) && barrios.map((barrio, index) => (
                                         <Polygon    key={index} 
                                                     ref={(el) => polygonBarrioRefs.current[index] = el}
                                                     eventHandlers={{
@@ -240,7 +263,7 @@ const MapEstacionamientos = ({ handleFilter }) => {
                                             </Popup>
                                         </Polygon>
                                     ))}
-                                    {estacionamientos && estacionamientos.length > 0 && (filtro.zonas.activo || estacionamientos.length < 500) && estacionamientos.map((estacionamiento, index) => (
+                                    {estacionamientos && estacionamientos.length > 0 && (activateOverlay.includes('Estacionamientos') || filtro.zonas.activo) && estacionamientos.map((estacionamiento, index) => (
                                         <Marker key={index} 
                                                 position={[estacionamiento.lat, estacionamiento.lon]}
                                                 icon={estacionamiento.colore.color === 'Verde' ? iconos.verde : 

@@ -45,14 +45,14 @@ export const getColor = async(req, res) => {
 
 export const getAllEstacionamientos = async(req, res) => {
     try {
-        /*const estacionamientos = await EstacionamientoModel.findAll({
+        const estacionamientos = await EstacionamientoModel.findAll({
             include: [
                 { model: Tipo_EstacionamientoModel },
                 { model: ColorModel }
             ]
-        })*/
+        })
 
-        const estacionamientos = await EstacionamientoModel.findAll()
+        //const estacionamientos = await EstacionamientoModel.findAll()
 
         console.log(estacionamientos.length)
 
@@ -96,7 +96,7 @@ export const leerCSV_ser = async(req, res) => {
         //response.data.pipe(csvParser({ separator: ';' }))
         
         //---------------------------------------------------------------------------------------
-       // Ruta al archivo CSV en tu directorio local
+       // Ruta al archivo CSV en directorio local
         const filePath = 'C:/Users/Nombre/Desktop/Alvaro/UNI/4/TFG/Datos/Estacionamiento(SER)/estacionamiento.csv';
 
        // Leer el archivo CSV localmente
@@ -662,7 +662,7 @@ export async function estacionamientosAux(estacionamientosReq) {
 
 export const filtro = async(req, res) => {
     try {
-        const { tipo, color, plazas } = req.query
+        const { tipo, color, plazas1, plazas2 } = req.query
 
         let whereConditions = {}
 
@@ -674,9 +674,22 @@ export const filtro = async(req, res) => {
             whereConditions['$colore.color$'] = color
         }
 
-        if (plazas > 0) {
+        if (plazas1 !== '' && plazas2 !== '') {
+            if (plazas1 === plazas2) {
+                whereConditions.plazas = plazas1
+            } else {
+                whereConditions.plazas = {
+                    [Op.between]: [plazas1, plazas2]
+                }
+            }
+            
+        } else if (plazas1 !== '') {
             whereConditions.plazas = {
-                [Op.gte]: plazas
+                [Op.gte]: plazas1
+            }
+        } else if (plazas2 !== '') {
+            whereConditions.plazas = {
+                [Op.lte]: plazas2
             }
         }
 
@@ -695,7 +708,7 @@ export const filtro = async(req, res) => {
         })
 
         const { distritos, barrios, estacionamientos } = await estacionamientosAux(estacionamientosBD)
-
+        
         res.json({ distritos, barrios, estacionamientos })
     } catch (error) {
         console.error('Error en la consulta buscarPorTipo: ', error);

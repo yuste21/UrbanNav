@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import { createAsyncThunk, createSlice, formatProdErrorMessage } from "@reduxjs/toolkit"
 import axios from "axios"
 import { URIsDistritos } from "../../distritos/URIsDistritos"
 import { URIsTrafico } from "../../trafico/URIsTrafico"
@@ -10,6 +10,11 @@ export const initialFilter = {
     hora1: '',
     hora2: '',
     sentido: '',
+    error: {
+        fecha: '',
+        hora: '', 
+        mes: ''
+    },
     getAll: false,
     filtrado: false
 }
@@ -58,10 +63,41 @@ export const dataTraficoSlice = createSlice({
         handleChange: (state, action) => {
             const { name, value } = action.payload
 
+            let error = { ...state.filtro.error }
+
+            if (name === 'fecha1') {
+                error.fecha = state.filtro.fecha2 !== '' && value > state.filtro.fecha2 && value !== ''
+                            ? 'La fecha de inicio no puede ser posterior a la de fin'
+                            : ''
+                error.mes = state.filtro.mes !== '' && value !== ''
+                            ? 'No se puede introducir mes y fecha al mismo tiempo'
+                            : ''
+            } else if (name === 'fecha2') {
+                error.fecha = state.filtro.fecha1 !== '' && value < state.filtro.fecha1 && value !== ''
+                            ? 'La fecha de fin no puede ser anterior a la de inicio'
+                            : ''
+                error.mes = state.filtro.mes !== '' && value !== ''
+                            ? 'No se puede introducir mes y fecha al mismo tiempo'
+                            : ''
+            } else if (name === 'hora1') {
+                error.hora = state.filtro.hora2 !== '' && value > state.filtro.hora2 && value !== ''
+                    ? 'La hora de inicio no puede ser posterior a la de fin'
+                    : ''
+            } else if (name === 'hora2') {
+                error.hora = state.filtro.hora1 !== '' && value < state.filtro.hora1 && value !== ''
+                    ? 'La hora de fin no puede ser anterior a la de inicio'
+                    : ''
+            } else if (name === 'mes') {
+                error.mes = (state.filtro.fecha1 !== '' || state.filtro.fecha2) && value !== ''
+                            ? 'No se puede introducir mes y fecha al mismo tiempo'
+                            : ''
+            }
+
             return {
                 ...state,
                 filtro: {
                     ...state.filtro,
+                    error: error,
                     [name]: value
                 }
             }
@@ -85,7 +121,7 @@ export const dataTraficoSlice = createSlice({
             return {
                 ...state,
                 filtro: {
-                    ...state.filtro,
+                    ...initialFilter,
                     getAll: true
                 }
             }

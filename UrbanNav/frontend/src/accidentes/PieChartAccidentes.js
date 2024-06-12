@@ -84,6 +84,7 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
 
   return (
     <>
+        <p>Estadísticas de los accidentes</p>
         <PieChart width={450} height={400}>
           <Pie
             activeIndex={activeIndex}

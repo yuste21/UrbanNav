@@ -1,23 +1,12 @@
-import { useEffect, useState } from "react"
 
 const LegendTrafico = ({ zonaSeleccionada }) => {
-
-    // const [datos, setDatos] = useState(selectedZone)
-    // useEffect(() => {
-    //     if(selectedZone !== null && JSON.stringify(selectedZone) !== '{}') {
-    //         console.log(JSON.stringify(selectedZone))
-    //         setDatos(selectedZone)
-    //         console.log(selectedZone)
-    //     }
-    // }, [selectedZone])
-
 
     return(
         <div className="legend">
             <h4>Leyenda</h4>
             <div className="info legend">
                 <div className="mb-2">
-                    <p>Densidad del tráfico clasificada</p>
+                    <p>Densidad del tráfico</p>
                 </div>
                 <div className="mb-2">
                     <i style={{ background: '#2A81CB' }}></i>Baja
