@@ -56,6 +56,7 @@
     ]
   },
   "devDependencies": {
-    "@types/turf": "^3.5.32"
+    "@types/turf": "^3.5.32",
+    "@babel/plugin-proposal-private-property-in-object": "^7.x.x"
   }
 }
