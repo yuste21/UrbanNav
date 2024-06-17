@@ -10,6 +10,12 @@ import FormRadares from "./FormRadares"
 import DynamicTable from "../table/DynamicTable"
 
 function Radares () {
+
+    useEffect(() => {
+        const url = process.env.REACT_APP_URL_BACKEND
+        console.log(url)
+    }, [])
+
     const radares = useSelector(state => state.radares.dataRadares.radares)
     const barrios = useSelector(state => state.radares.dataRadares.barrios)
     const distritos = useSelector(state => state.radares.dataRadares.distritos)

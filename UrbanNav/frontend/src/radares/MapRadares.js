@@ -5,7 +5,7 @@ import { SetViewOnClick, DisplayPosition, zoom, center } from "../MapFunctions"
 import { useModal } from "../modal/useModal"
 import Modal from '../modal/Modal.js';
 import { iconos } from "../markerIcons.js";
-import { getRadares } from "../features/radar/dataRadarSlice"
+import { getRadares, getRadaresPrev } from "../features/radar/dataRadarSlice"
 
 function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, showBarChart, showTable, setShowTable }) {
 
@@ -73,8 +73,8 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
                         <>
                             <button className="btn btn-secondary"
                                     onClick={() => {
-                                        dispatch(getRadares({ radares: radaresPrev }))
-                                        setActivateOverlay('Distritos')
+                                        dispatch(getRadaresPrev({ radares: radaresPrev }))
+                                        setActivateOverlay('Distritos Radares')
                                     }}
                             >
                                 Volver a mostrar las zonas

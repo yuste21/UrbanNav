@@ -53,6 +53,26 @@ export const dataRadarSlice = createSlice({
     initialState,
     reducers: {
         getRadares: (state, action) => {
+            const radaresPayload = action.payload.radares
+
+            let radares = []
+
+            radaresPayload.forEach((radar) => {
+                radares.push({
+                    radar: radar,
+                    multas: radar.multas.length
+                })
+            })
+
+            return {
+                ...state,
+                dataRadares: {
+                    ...state.dataRadares,
+                    radares: radares
+                }
+            }
+        },
+        getRadaresPrev: (state, action) => {
             const radares = action.payload.radares
             return {
                 ...state,
@@ -162,6 +182,6 @@ export const dataRadarSlice = createSlice({
     },
 })
 
-export const { getRadares, handleChange, vaciarFiltro, activarFiltro } = dataRadarSlice.actions
+export const { getRadares, getRadaresPrev, handleChange, vaciarFiltro, activarFiltro } = dataRadarSlice.actions
 
 export default dataRadarSlice.reducer

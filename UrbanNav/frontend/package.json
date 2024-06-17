@@ -12,6 +12,7 @@
     "bootstrap-icons": "^1.11.3",
     "datatables.net": "^2.0.8",
     "datatables.net-dt": "^2.0.8",
+    "dotenv": "^16.4.5",
     "jquery": "^3.7.1",
     "leaflet": "^1.9.4",
     "local-storage": "^2.0.0",

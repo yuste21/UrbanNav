@@ -1,4 +1,6 @@
-const base = 'https://urbannav-backend.onrender.com/trafico'
+const url = process.env.REACT_APP_URL_BACKEND
+
+const base = `${url}/trafico`
 //const base = 'http://localhost:8000/trafico/'
 
 export const URIsTrafico = {

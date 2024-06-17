@@ -199,6 +199,14 @@ const MapTrafico = ({ activatedOverlay,
         </Popover>
     )
 
+    const popoverDatosDisponibles = (
+        <Popover id='popoverDatosDisponibles'>
+            <Popover.Body className='popover-body'>
+                <p>Desde {} hasta {}</p>
+            </Popover.Body>
+        </Popover>
+    )
+
     return(
         <div className='container'>
             <div className='row'>
@@ -257,15 +265,18 @@ const MapTrafico = ({ activatedOverlay,
                                 }
                             </>
                         }
-                        <div className='row'>
-                            <OverlayTrigger
-                                placement='auto'
-                                trigger='click'
-                                overlay={popoverFechas}
-                            >
-                                <button className='btn'>Fecha de los datos</button>
-                            </OverlayTrigger>
-                        </div>
+                        
+                        {!filtro.filtrado &&
+                            <div className='row'>
+                                <OverlayTrigger
+                                    placement='auto'
+                                    trigger='click'
+                                    overlay={popoverFechas}
+                                >
+                                    <button className='btn'>Fecha de los datos</button>
+                                </OverlayTrigger>
+                            </div>
+                        }
                     </div>
                     <hr></hr>
                     <div className='row'>

@@ -1,4 +1,6 @@
-const base = 'https://urbannav-backend.onrender.com/accidentes/';
+const url = process.env.REACT_APP_URL_BACKEND
+
+const base = `${url}/accidentes/`
 //const base = 'http://localhost:8000/accidentes/'
 
 export const URIsAccidentes = {
