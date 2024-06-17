@@ -13,7 +13,7 @@ import routerDistrito from './src/routes/routesDistrito.js';
 import routerBarrio from './src/routes/routesBarrio.js';
 import routerMultas from './src/routes/routesMultas.js';
 
-const port = process.env.PORT
+const port = process.env.PORT || 4000
 const app = express()
 
 // Configurar el middleware body-parser con un límite de tamaño mayor
