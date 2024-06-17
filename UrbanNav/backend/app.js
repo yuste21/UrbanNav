@@ -13,7 +13,7 @@ import routerDistrito from './src/routes/routesDistrito.js';
 import routerBarrio from './src/routes/routesBarrio.js';
 import routerMultas from './src/routes/routesMultas.js';
 
-
+const port = process.env.PORT
 const app = express()
 
 // Configurar el middleware body-parser con un límite de tamaño mayor
@@ -42,6 +42,6 @@ app.get('/', (req,res) => {
     res.send('HOLA MUNDO')
 })
 
-app.listen(8000, () =>{ 
-    console.log('Server UP running in http://localhost:8000/')  
+app.listen(port, () =>{ 
+    console.log(`Server UP running on port ${port}`)  
 }) 
