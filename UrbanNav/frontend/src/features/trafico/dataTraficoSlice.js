@@ -149,6 +149,9 @@ export const dataTraficoSlice = createSlice({
             state.dataTrafico.barrios = action.payload.barrios
             state.dataTrafico.media = action.payload.media_total
             state.dataTrafico.estaciones = action.payload.estaciones_trafico
+
+            state.dataTrafico.fechaMin = action.payload.fechaMin
+            state.dataTrafico.fechaMax = action.payload.fechaMax
             state.loading = false
         })
         .addCase(getDataTraficoInicio.rejected, (state, action) => {

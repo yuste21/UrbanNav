@@ -188,21 +188,6 @@ export function getEstaciones(trafico, orientacion, horaMin, horaMax) {
         })
         media = parseFloat(media.toFixed(2))
 
-        //inferior = estaciones cuyas medidas estan debajo de la media general
-        //superior = estaciones cuyas medidas estan encima de la media general
-        /*
-        var inferior = 0
-        var superior = 0
-        estaciones.forEach(estacion => {
-            if(estacion.media < media) {
-                inferior++
-            } else {
-                superior++
-            }
-        })
-
-        console.log('Inferior: ' + inferior + ' | Superior: ' + superior)
-        */
         return({ estaciones, media })
     } catch (error) {
         console.log('Error: ' + error)

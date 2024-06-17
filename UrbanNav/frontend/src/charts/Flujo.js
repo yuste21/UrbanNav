@@ -47,7 +47,7 @@ const Flujo = () => {
             if (tipo === 'estacion' || tipo === 'trafico distrito' || tipo === 'accidente distrito' || tipo === 'accidente barrio') {
                 setData(entidad.zonaPrincipal)
             } else if (tipo.split(' ')[0] === 'barrio') {   //tipo === 'barrio id'
-                var aux = entidad.subzonas.find(el => el.nombre === tipo.slice(7))
+                var aux = entidad.subzonas.find(el => el.nombre === tipo.slice(17))
                 if (aux) {
                     setData(aux.accidentes)
                     setBarrio(aux)
@@ -217,12 +217,12 @@ const Flujo = () => {
                                                         <Polygon key={barrio.nombre}
                                                                 positions={barrio.delimitaciones}
                                                                 pathOptions={{
-                                                                    color: barrio.nombre === tipo.slice(7) ? '#CB2B3E' : '#2A81CB'
+                                                                    color: barrio.nombre === tipo.slice(17) ? '#CB2B3E' : '#2A81CB'
                                                                 }}
                                                                 eventHandlers={{
                                                                     click: () => {
                                                                         setBarrio(barrio)
-                                                                        setTipo(`barrio ${barrio.nombre} accidente`)
+                                                                        setTipo(`barrio accidente ${barrio.nombre}`)
                                                                     }
                                                                 }}
                                                         >

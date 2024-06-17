@@ -195,7 +195,7 @@ export const getTraficoInicio = async(req, res) => {
 
         const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'false', null, null)
 
-        res.json({ distritos, barrios, estaciones_trafico, media_total })
+        res.json({ distritos, barrios, estaciones_trafico, media_total, fechaMin: '2023-12-01', fechaMax: '2023-12-31' })
     } catch (error) {
         res.status(500).json({ message: 'Error en la consulta getTraficoInicio de distrito' })
         console.log('Error en la consulta getTraficoInicio de distrito: ', error)

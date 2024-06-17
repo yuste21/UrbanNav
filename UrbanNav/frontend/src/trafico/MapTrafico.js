@@ -22,6 +22,8 @@ const MapTrafico = ({ activatedOverlay,
     const distritos = useSelector(state => state.trafico.dataTrafico.distritos)
     const barrios = useSelector(state => state.trafico.dataTrafico.barrios)
     const media = useSelector(state => state.trafico.dataTrafico.media)    
+    const fechaMin = useSelector(state => state.trafico.dataTrafico.fechaMin)
+    const fechaMax = useSelector(state => state.trafico.dataTrafico.fechaMax)
 
     const filtro = useSelector(state => state.trafico.filtro)
     const [showForm, setShowForm] = useState(false)
@@ -189,6 +191,14 @@ const MapTrafico = ({ activatedOverlay,
         </Popover>
     );
 
+    const popoverFechas = (
+        <Popover id='popoverFechas'>
+            <Popover.Body className='popover-body'>
+                <p>Desde {fechaMin} hasta {fechaMax}</p>
+            </Popover.Body>
+        </Popover>
+    )
+
     return(
         <div className='container'>
             <div className='row'>
@@ -247,6 +257,15 @@ const MapTrafico = ({ activatedOverlay,
                                 }
                             </>
                         }
+                        <div className='row'>
+                            <OverlayTrigger
+                                placement='auto'
+                                trigger='click'
+                                overlay={popoverFechas}
+                            >
+                                <button className='btn'>Fecha de los datos</button>
+                            </OverlayTrigger>
+                        </div>
                     </div>
                     <hr></hr>
                     <div className='row'>
