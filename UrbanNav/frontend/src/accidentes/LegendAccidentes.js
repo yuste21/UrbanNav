@@ -1,8 +1,6 @@
 import React from 'react';
 
 const LegendAccidentes = ({ zonaSelected, riesgoMedio }) => {
-    //Hacer modal en Leyenda para que la explique un poco | Que es el balance 
-    //const [isOpenModal, openModal, closeModal] = useModal(false)
 
     return (
         <div className='legend'>

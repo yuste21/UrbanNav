@@ -1,4 +1,3 @@
-import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 
@@ -9,7 +8,7 @@ import Trafico from './trafico/Trafico';
 import Radares from './radares/Radares';
 import Multas from './radares/Multas';
 import Flujo from './charts/Flujo';
-
+import Manual from './manual/manual';
 
 function App() {
   return (
@@ -22,6 +21,7 @@ function App() {
           <Route path='/flujo' element={<Flujo/>} />
           <Route path='/radares' element={<Radares/>} />
           <Route path='/multas' element={<Multas/>} />
+          <Route path='/manual' element={<Manual/>} />
           <Route path='/' element={<Inicio/>} />
         </Routes>
       </BrowserRouter>

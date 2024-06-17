@@ -20,7 +20,7 @@ const LegendTrafico = ({ zonaSeleccionada }) => {
                 {zonaSeleccionada && 
                     <div className='mt-2'>
                         <p>Distrito: {zonaSeleccionada.nombre} </p>
-                        <p>Trafico Medio: {(zonaSeleccionada.media)} </p>
+                        <p>Trafico diario: {(zonaSeleccionada.media)} </p>
                     </div>
                 }
             </div>

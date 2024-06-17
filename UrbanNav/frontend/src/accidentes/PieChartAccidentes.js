@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { PieChart, Pie, Sector } from "recharts";
+import { PieChart, Pie, Sector, ResponsiveContainer } from "recharts";
 
 
 const renderActiveShape = (props) => {
@@ -61,7 +61,7 @@ const renderActiveShape = (props) => {
         y={ey}
         textAnchor={textAnchor}
         fill="#333"
-      >{`PV ${value}`}</text>
+      >{`${value}`}</text>
       <text
         x={ex + (cos >= 0 ? 1 : -1) * 12}
         y={ey}
@@ -85,20 +85,22 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
   return (
     <>
         <p>Estadísticas de los accidentes</p>
-        <PieChart width={450} height={400}>
-          <Pie
-            activeIndex={activeIndex}
-            activeShape={renderActiveShape}
-            data={datosAgrupadosPie}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            fill="#8884d8"
-            dataKey="cantidad"
-            onMouseEnter={onPieEnter}
-          />
-        </PieChart>
+        <ResponsiveContainer width='100%' height={400}>
+          <PieChart width={450} height={400}>
+            <Pie
+              activeIndex={activeIndex}
+              activeShape={renderActiveShape}
+              data={datosAgrupadosPie}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="cantidad"
+              onMouseEnter={onPieEnter}
+            />
+          </PieChart>
+        </ResponsiveContainer>
         <a>Agrupar por: </a> <br/>
         <label className="me-3">
             <input type="radio" 
@@ -109,6 +111,7 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
             />
             Accidente
         </label>
+
         <label className="me-3">
             <input type="radio" 
                    value={'tipo_vehiculo.tipo_vehiculo'}
@@ -118,6 +121,17 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
             />
             Vehículo
         </label>
+        
+        <label className='me-3'>
+          <input  type='radio' 
+                  value={'clima.clima'} 
+                  checked={agrupacionPie === 'clima.clima'} 
+                  name='grafica' 
+                  onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie')} 
+          />
+          Clima
+        </label>
+
         <label className="me-3">
             <input type="radio" 
                    value={'lesividade.tipo_lesion'}

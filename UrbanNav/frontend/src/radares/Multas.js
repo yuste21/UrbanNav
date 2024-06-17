@@ -1,10 +1,10 @@
+import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
+import { Offcanvas, OverlayTrigger, Popover } from "react-bootstrap"
 import NavbarPage from "../navbar/navbar.js"
 import Loader from "../loader/Loader.js"
-import { Offcanvas, OverlayTrigger, Popover } from "react-bootstrap"
 import { initialFilter } from "../features/radar/dataMultaSlice.js"
 import { getMultasFiltro, getMultasInicio } from "../features/radar/dataMultaSlice.js"
-import { useEffect, useState } from "react"
 import FormMultas from "./FormMultas.js"
 import DynamicTable from "../table/DynamicTable.js"
 
@@ -33,7 +33,7 @@ const Multas = () => {
     const [filtroAplicado, setFiltroAplicado] = useState([])
     useEffect(() => {
         setFiltroAplicado(filtroString(filtro))
-    }, [])
+    }, [filtro])
 
     const filtroString = (filtro) => {
         let resultado = []
@@ -126,12 +126,10 @@ const Multas = () => {
                 calificacion: multa.calificacione.calificacion_multa,
                 vel_limite: multa.vel_limite === null ? '-' : multa.vel_limite,
                 vel_circula: multa.vel_circula === null ? '-' : multa.vel_circula,
-                barrioId: multa.barrio.nombre
+                barrioId: multa.barrio !== null ? multa.barrio.nombre : 'Desconocido'
             })
         })
         
-        console.log('Multa1 = ' + JSON.stringify(data[0]))
-
         return data
     }
 
@@ -164,7 +162,7 @@ const Multas = () => {
     );
 
     return(
-        <div className="padre">
+        <div>
             <NavbarPage></NavbarPage>
             <div className="container" style={{ position: 'relative' }}>
                 {loading ?
@@ -172,7 +170,7 @@ const Multas = () => {
                 :
                     <>
                         <div className="row">
-                            <div className="col-1">
+                            <div className="col-xl-1 col-lg-12">
                                 <h3>{multas.length} Multas</h3>
                                 {!showForm &&
                                     <>
@@ -191,7 +189,7 @@ const Multas = () => {
                                     }
                                     </>
                                 }
-                                <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }} className="canvas">
+                                <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }} className="custom-offcanvas canvas">
                                     <Offcanvas.Body>
                                         <FormMultas handleFilter={handleFilter}
                                                     handleClose={handleClose}
@@ -199,7 +197,7 @@ const Multas = () => {
                                     </Offcanvas.Body>
                                 </Offcanvas>
                             </div>
-                            <div className="col-11">
+                            <div className="col-xl-11 col-lg-12">
                                 <div className="row">
                                     <DynamicTable data={dataTable()}
                                                   columns={dataColumns()}

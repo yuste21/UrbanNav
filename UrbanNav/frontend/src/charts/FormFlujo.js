@@ -1,4 +1,4 @@
-import { Form, Col, FormControl } from 'react-bootstrap'
+import { Form, Col } from 'react-bootstrap'
 import { handleChange, 
         getFlujoAccidenteDistritoFecha, getFlujoAccidenteDistritoHora,
         getFlujoAccidenteBarrioFecha, getFlujoAccidenteBarrioHora,
@@ -11,8 +11,6 @@ import { useNavigate } from "react-router-dom"
 import { useState } from 'react'
 
 const FormFlujo = ({ entidad, tipo }) => {
-    //const { form, handleSubmit, handleChange } = useFormFlujo(initialForm, setLoading)
-
     const dispatch = useDispatch()
     const filtro = useSelector(state => state.flujo.filtro)
     const navigate = useNavigate()
@@ -41,7 +39,7 @@ const FormFlujo = ({ entidad, tipo }) => {
         }
 
         setValidated(true)
-        var info, data
+        var info
         var tipo_dato = tipo
         if(tipo === 'estacion') {
             if(filtro.fecha1 !== '' && filtro.fecha2 !== '') {
@@ -52,7 +50,6 @@ const FormFlujo = ({ entidad, tipo }) => {
                 info = 'hora'
             }
         } else if(tipo === 'trafico distrito'){
-            console.log('Trafico distrito')
             if(filtro.fecha1 !== '' && filtro.fecha2 !== '') {
                 console.log('Fecha')
                 dispatch(getFlujoTraficoDistritoFecha({ filtro, entidad }))
@@ -86,58 +83,62 @@ const FormFlujo = ({ entidad, tipo }) => {
     return(
         <>
             <Form noValidate validated={validated} onSubmit={(event) => handleSubmit(event, entidad, tipo)}>
-                <div className="row mb-4">
-                    <Form.Group as={Col}
-                                className="d-flex align-items-center"
-                    >
-                        <Form.Label className="fw-bold me-2" htmlFor='fecha1'>Desde</Form.Label>
-                        <Form.Control type="date"
-                                      id="fecha1"
-                                      name="fecha1"
-                                      value={filtro.fecha1}
-                                      style={{ width: '150px' }}
-                                      onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                                      className="me-2"
-                                      isInvalid={!!filtro.error.fecha}
-                        />
-                        <Form.Label className="fw-bold me-2" htmlFor='fecha2'>Hasta</Form.Label>
-                        <Form.Control type="date"
-                                      id="fecha2"
-                                      name="fecha2"
-                                      value={filtro.fecha2}
-                                      style={{ width: '150px' }}
-                                      onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                                      isInvalid={!!filtro.error.fecha}
-                        />
-                        <Form.Control.Feedback type='invalid'>
+                <div className="row mb-2">
+                    <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                        <div className='d-flex align-items-center mb-2'>
+                            <Form.Label className="fw-bold me-2" htmlFor='fecha1'>Desde</Form.Label>
+                            <Form.Control type="date"
+                                        id="fecha1"
+                                        name="fecha1"
+                                        value={filtro.fecha1}
+                                        onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                        className="me-2"
+                                        isInvalid={!!filtro.error.fecha}
+                            />
+                        </div>
+                    </Form.Group>
+                    <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                        <div className='d-flex align-items-center mb-2'>
+                            <Form.Label className="fw-bold me-2" htmlFor='fecha2'>Hasta</Form.Label>
+                            <Form.Control type="date"
+                                        id="fecha2"
+                                        name="fecha2"
+                                        value={filtro.fecha2}
+                                        onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                        isInvalid={!!filtro.error.fecha}
+                            />
+                        </div>
+                        <Form.Control.Feedback type='invalid' style={{ display: 'block' }}>
                             {filtro.error.fecha}
                         </Form.Control.Feedback>
                     </Form.Group>
                 </div>
-                <div className="row mb-4">
-                    <Form.Group as={Col}
-                                className="d-flex align-items-center"
-                    >
-                        <Form.Label className="fw-bold me-2" htmlFor='hora1'>Desde</Form.Label>
-                        <Form.Control type="time"
-                                      id="hora1"
-                                      name="hora1"
-                                      value={filtro.hora1}
-                                      style={{ width: '100px' }}
-                                      onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                                      className="me-2"
-                                      isInvalid={!!filtro.error.hora}
-                        />
-                        <Form.Label className="fw-bold me-2" htmlFor='hora2'>Hasta</Form.Label>
-                        <Form.Control type="time"
-                                      id="hora2"
-                                      name="hora2"
-                                      value={filtro.hora2}
-                                      style={{ width: '100px' }}
-                                      onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                                      isInvalid={!!filtro.error.hora}
-                        />
-                        <Form.Control.Feedback type='invalid'>
+                <div className="row mb-2">
+                    <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                        <div className='d-flex align-items-center mb-2'>
+                            <Form.Label className="fw-bold me-2" htmlFor='hora1'>Desde</Form.Label>
+                            <Form.Control type="time"
+                                          id="hora1"
+                                          name="hora1"
+                                          value={filtro.hora1}
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                          className="me-2"
+                                          isInvalid={!!filtro.error.hora}
+                            />
+                        </div>
+                    </Form.Group>
+                    <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                        <div className='d-flex align-items-center'>
+                            <Form.Label className="fw-bold me-2" htmlFor='hora2'>Hasta</Form.Label>
+                            <Form.Control type="time"
+                                          id="hora2"
+                                          name="hora2"
+                                          value={filtro.hora2}
+                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                          isInvalid={!!filtro.error.hora}
+                            />
+                        </div>
+                        <Form.Control.Feedback type='invalid' style={{ display: 'block' }}>
                             {filtro.error.hora}
                         </Form.Control.Feedback>
                     </Form.Group>

@@ -7,7 +7,6 @@ const DynamicTable = ({ data, columns }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
-    console.log('Data 0 = ' + JSON.stringify(data[0]))
 
     const onSort = (columnKey) => {
         let direction = 'asc';
@@ -66,10 +65,6 @@ const DynamicTable = ({ data, columns }) => {
         setCurrentPage(pageNumber);
     };
 
-    useEffect(() => {
-        console.log(JSON.stringify(paginatedData))
-    }, [])
-
     const getPageNumbers = () => {
         const pages = [];
         const maxPages = 7;
@@ -97,46 +92,48 @@ const DynamicTable = ({ data, columns }) => {
                     ))}
                 </Form.Control>
             </Form.Group>
-            <Table striped bordered hover>
-                <thead>
-                    <tr>
-                        {columns.map((column, index) => (
-                            <th key={index} onClick={() => onSort(column.accessor)}>
-                                {column.header}
-                                <span className="dt-column-order">
-                                    {getSortIcon(column.accessor)}
-                                </span>
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {paginatedData.map((item, rowIndex) => (
-                        <tr key={rowIndex}>
-                            {columns.map((column, columnIndex) => (
-                                <td key={columnIndex}>{item[column.accessor]}</td>
+            <div className="table-responsive">
+                <Table striped bordered hover>
+                    <thead>
+                        <tr>
+                            {columns.map((column, index) => (
+                                <th key={index} onClick={() => onSort(column.accessor)}>
+                                    {column.header}
+                                    <span className="dt-column-order">
+                                        {getSortIcon(column.accessor)}
+                                    </span>
+                                </th>
                             ))}
                         </tr>
-                    ))}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colSpan={columns.length}>
-                            <Pagination>
-                                <Pagination.First onClick={() => handlePageChange(1)} disabled={currentPage === 1} />
-                                <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} />
-                                {getPageNumbers().map((page) => (
-                                    <Pagination.Item key={page} active={page === currentPage} onClick={() => handlePageChange(page)}>
-                                        {page}
-                                    </Pagination.Item>
+                    </thead>
+                    <tbody>
+                        {paginatedData.map((item, rowIndex) => (
+                            <tr key={rowIndex}>
+                                {columns.map((column, columnIndex) => (
+                                    <td key={columnIndex}>{item[column.accessor]}</td>
                                 ))}
-                                <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} />
-                                <Pagination.Last onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages} />
-                            </Pagination>
-                        </td>
-                    </tr>
-                </tfoot>
-            </Table>
+                            </tr>
+                        ))}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colSpan={columns.length}>
+                                <Pagination>
+                                    <Pagination.First onClick={() => handlePageChange(1)} disabled={currentPage === 1} />
+                                    <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} />
+                                    {getPageNumbers().map((page) => (
+                                        <Pagination.Item key={page} active={page === currentPage} onClick={() => handlePageChange(page)}>
+                                            {page}
+                                        </Pagination.Item>
+                                    ))}
+                                    <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} />
+                                    <Pagination.Last onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages} />
+                                </Pagination>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </Table>
+            </div>
         </div>
     );
 };

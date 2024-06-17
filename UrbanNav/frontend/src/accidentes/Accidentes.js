@@ -1,19 +1,16 @@
-import { URIsAccidentes } from "./URIsAccidentes";
-import { URIsDistritos } from "../distritos/URIsDistritos"
-import MapAccidentes from "./MapAccidentes";
-import NavbarPage from "../navbar/navbar";
-import BarChartAccidente from "./BarChartAccidente";
 import { useState, useEffect } from "react";
-import axios from 'axios'
-import Loader from "../loader/Loader";
-import get from 'lodash/get'
-import PieChartAccidentes from "./PieChartAccidentes";
-
-import Button from 'react-bootstrap/Button';
-import Card from 'react-bootstrap/Card';
-import Collapse from 'react-bootstrap/Collapse';
 import { useDispatch, useSelector } from "react-redux";
-import { activarFiltro, getDataAccidentesFiltro, getDataAccidentesInicio, initialFilter } from "../features/accidente/dataAccidenteSlice";
+import get from 'lodash/get'
+import NavbarPage from "../navbar/navbar";
+import Loader from "../loader/Loader";
+import { 
+    getDataAccidentesFiltro, 
+    getDataAccidentesInicio, 
+    initialFilter 
+} from "../features/accidente/dataAccidenteSlice";
+import MapAccidentes from "./MapAccidentes";
+import BarChartAccidente from "./BarChartAccidente";
+import PieChartAccidentes from "./PieChartAccidentes";
 
 function Accidentes () {
     const dispatch = useDispatch()
@@ -103,7 +100,7 @@ function Accidentes () {
     }
 
     return(
-        <div className="padre">
+        <div>
             <NavbarPage></NavbarPage>
             <div className="container">
                 {loading ? 

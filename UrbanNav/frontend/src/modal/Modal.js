@@ -1,7 +1,6 @@
+import { useEffect } from "react";
 import { Modal, Button } from "react-bootstrap"
 import FormFlujo from "../charts/FormFlujo"
-import { useEffect } from "react";
-
 
 const ModalWindow = ({children, isOpen, closeModal, info}) => {
     const { data, entidad, tipo, idx } = info;
@@ -16,20 +15,17 @@ const ModalWindow = ({children, isOpen, closeModal, info}) => {
                size="lg"
         >
             <Modal.Header closeButton>
-                <Modal.Title>Información {data !== '' && `de ${data}`} </Modal.Title>
+                <Modal.Title className="ubuntu-bold">Información {data !== '' && `de ${data.split(' ')[0]}`} </Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {children}
             </Modal.Body>
             <Modal.Footer className="d-flex justify-content-between align-items-center">
-                {(data !== 'Accidente Marker') &&
+                {(data !== 'Accidente Marker' && !data.includes('Radar')) &&
                     <FormFlujo entidad={entidad}
                             tipo={tipo}
                     />
                 }
-                <Button variant="secondary" onClick={() => closeModal(idx) }>
-                    Cerrar
-                </Button>
             </Modal.Footer>
         </Modal>
     )

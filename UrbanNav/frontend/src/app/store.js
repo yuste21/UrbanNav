@@ -5,6 +5,7 @@ import dataEstacionamientoSlice from "../features/estacionamiento/dataEstacionam
 import dataTraficoSlice from "../features/trafico/dataTraficoSlice";
 import dataFlujoSlice from "../features/flujo/dataFlujoSlice";
 import dataMultaSlice from "../features/radar/dataMultaSlice";
+import helpSlice from "../features/help/helpSlice";
 
 const rootReducer = {
     trafico: dataTraficoSlice,
@@ -12,7 +13,8 @@ const rootReducer = {
     accidentes: dataAccidenteSlice,
     estacionamientos: dataEstacionamientoSlice,
     flujo: dataFlujoSlice,
-    multas: dataMultaSlice
+    multas: dataMultaSlice,
+    help: helpSlice
 }
 
 

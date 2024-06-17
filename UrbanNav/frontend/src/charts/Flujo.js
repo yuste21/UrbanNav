@@ -1,15 +1,17 @@
-import { Bar, LineChart, Line, ComposedChart,
-        CartesianGrid, XAxis, YAxis, 
-        Legend, Tooltip, ResponsiveContainer, Brush  } from "recharts"
-import { useLocation } from "react-router-dom"
-import { MapContainer, Marker, Polygon, Popup, TileLayer } from "react-leaflet"
 import { useEffect, useState } from "react"
-import { iconos } from "../markerIcons"
-import NavbarPage from "../navbar/navbar"
 import { useSelector } from "react-redux"
+import { useLocation } from "react-router-dom"
+import { 
+    Bar, Line, 
+    ComposedChart,
+    CartesianGrid, 
+    XAxis, YAxis, 
+    Legend, Tooltip, ResponsiveContainer, Brush  } from "recharts"
+import { MapContainer, Marker, Polygon, Popup, TileLayer } from "react-leaflet"
 import Loader from "../loader/Loader"
+import NavbarPage from "../navbar/navbar"
+import { iconos } from "../markerIcons"
 import { initialDataFlujo } from "../features/flujo/dataFlujoSlice"
-import { Draggable } from "leaflet"
 
 const Flujo = () => {
     //entidad podra ser el data que devuelva tanto la consulta de trafico como la de accidentes
@@ -63,7 +65,7 @@ const Flujo = () => {
 
 
     return(
-        <div className="padre">
+        <div>
             <NavbarPage></NavbarPage>
             <div className="container">
             {loading || entidad === null ?
@@ -74,13 +76,13 @@ const Flujo = () => {
                         <div className="col">
                             {tipo === 'estacion' ?
                                 <h3>Estacion: {entidad.codigo}</h3>
-                            : tipo === 'trafico distrito' || tipo === 'accidente distrito' ?
+                            : tipo === 'trafico distrito' || tipo === 'accidente distrito' || tipo.split(' ')[0] === 'estacion' || tipo.split(' ')[0] === 'barrio' ?
                                 <h3>Distrito: {entidad.nombre}</h3>
                             :   <h3>Barrio: {entidad.nombre}</h3>
                             }
                         </div>
                         <div className="col">
-                            <h3>Desde {filtro[`${info}1`]} hasta {filtro[`${info}2`]}</h3>
+                            <h3>Desde {filtro[`${info}1`]} hasta {tipo.includes('accidente') ? filtro[`${info}2`] : `${filtro[`${info}2`].split(':')[0]}:59`}</h3>
                         </div>
                     </div>
                     <div className="row">
@@ -118,7 +120,7 @@ const Flujo = () => {
                                             } else {
                                             // Lógica para mostrar otra información si 'info' no es una fecha
                                             // Por ejemplo, si es una hora, podrías formatearla de manera especial aquí
-                                            return (tipo === 'accidente distrito' || tipo.split(' ')[0] === 'barrio') || tipo === 'accidente barrio' ? ["accidentes", value] : ["aforo", value];
+                                            return `${value}`;
                                             }
                                             
                                         }} // Solo muestra la información de "aforo" en Tooltips
@@ -220,7 +222,7 @@ const Flujo = () => {
                                                                 eventHandlers={{
                                                                     click: () => {
                                                                         setBarrio(barrio)
-                                                                        setTipo(`barrio ${barrio.nombre}`)
+                                                                        setTipo(`barrio ${barrio.nombre} accidente`)
                                                                     }
                                                                 }}
                                                         >

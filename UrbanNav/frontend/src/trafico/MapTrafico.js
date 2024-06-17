@@ -1,16 +1,13 @@
-import axios from 'axios'
-import { MapContainer, TileLayer, Marker, Polygon, Popup, LayersControl, LayerGroup } from 'react-leaflet' 
 import { useState, useEffect } from 'react'
-import { iconos } from '../markerIcons'
-import LegendTrafico from "./LegendTrafico"
-import FormFlujo from '../charts/FormFlujo'
-import { useModal } from '../modal/useModal'
-import Modal from '../modal/Modal'
-import { URIsTrafico } from './URIsTrafico'
-import { DisplayPosition } from '../MapFunctions'
 import { useSelector } from 'react-redux'
-import { Button, Offcanvas, OverlayTrigger, Popover, Tooltip } from 'react-bootstrap';
+import { MapContainer, TileLayer, Marker, Polygon, Popup } from 'react-leaflet' 
+import { Offcanvas, OverlayTrigger, Popover } from 'react-bootstrap';
+import LegendTrafico from "./LegendTrafico"
+import Modal from '../modal/Modal'
+import { useModal } from '../modal/useModal'
 import FormTrafico from './FormTrafico'
+import { DisplayPosition } from '../MapFunctions'
+import { iconos } from '../markerIcons'
 
 const MapTrafico = ({ activatedOverlay,
                       setActivatedOverlay,
@@ -118,7 +115,7 @@ const MapTrafico = ({ activatedOverlay,
     const [filtroAplicado, setFiltroAplicado] = useState([])
     useEffect(() => {
         setFiltroAplicado(filtroString(filtro))
-    }, [])
+    }, [filtro])
 
     const filtroString = (filtro) => {
         let resultado = []
@@ -206,7 +203,7 @@ const MapTrafico = ({ activatedOverlay,
                             Ocultar grafica
                         </button>
                     : (activatedOverlay.split(' ').includes('Distritos') || activatedOverlay.split(' ').includes('Barrios')) &&
-                        <button className='btn mt-3'
+                        <button className='btn'
                                 onMouseEnter={() => setIcon('bi bi-bar-chart-fill')}
                                 onMouseLeave={() => setIcon('bi bi-bar-chart')}
                                 onClick={() => setShowBarChart(true)}
@@ -215,6 +212,7 @@ const MapTrafico = ({ activatedOverlay,
                         </button>
                   
                     }
+
                     {/* FILTRO */}
                     {!showForm && !showBarChart &&
                         <button className='btn' onClick={handleShow}>
@@ -222,7 +220,7 @@ const MapTrafico = ({ activatedOverlay,
                         </button>
                     }
                     {
-                        <Offcanvas show={showForm} onHide={handleClose} style={{ width: '700px' }} className="canvas">
+                        <Offcanvas show={showForm} onHide={handleClose} style={{ width: '700px' }} className="custom-offcanvas canvas">
                             <Offcanvas.Body>
                                 <FormTrafico handleFilter={handleFilter}
                                             handleClose={handleClose}
@@ -234,7 +232,7 @@ const MapTrafico = ({ activatedOverlay,
                     <div className='row'>
                         {!showForm && 
                             <>
-                                <h5>Trafico Medio {media}</h5>
+                                <h5>Trafico diario {media}</h5>
                                 {filtro.filtrado &&
                                     <div className='row'>
                                         <OverlayTrigger
@@ -259,21 +257,21 @@ const MapTrafico = ({ activatedOverlay,
                     <div className='card m-3'>
                         <div className='card-body'>
                             {map ? <DisplayPosition map={map} /> : null}
-                            <label className='me-2'>Mostrar distritos</label>
+                            <label className='me-2'>Distritos</label>
                             <input type='checkbox'
                                    className='me-4'
                                    checked={activatedOverlay.includes('Distritos')}
                                    onClick={() => handleOverlayChange('Distritos')}  
                                    disabled={showBarChart === true}     
                             />
-                            <label className='me-2'>Mostrar barrios</label>
+                            <label className='me-2'>Barrios</label>
                             <input type='checkbox'
                                    className='me-4'
                                    checked={activatedOverlay.includes('Barrios')}
                                    onClick={() => handleOverlayChange('Barrios')}  
                                    disabled={showBarChart === true}     
                             />
-                            <label className='me-2'>Mostrar estaciones</label>
+                            <label className='me-2'>Estaciones</label>
                             <input type='checkbox'
                                 checked={activatedOverlay.includes('Estaciones')}
                                 onClick={() => handleOverlayChange('Estaciones')}         
@@ -319,19 +317,19 @@ const MapTrafico = ({ activatedOverlay,
                                                     </button>
                                                     <Modal isOpen={isOpenModal} 
                                                            closeModal={closeModal} 
-                                                           info={{ data: 'Trafico', entidad: estacion, tipo: 'estacion', idx: estacion.estacion }}
+                                                           info={{ data: 'Estación de tráfico', entidad: estacion, tipo: 'estacion', idx: estacion.estacion }}
                                                     >
                                                         <p style={{ fontWeight: 'bold' }}>
                                                             Nombre: {estacion.nombre} <br/>
                                                             Estacion: {estacion.estacion} <br/>
                                                             {estacionOtra && <hr/>}
                                                             Sentido: {estacion.sentido} <br/>
-                                                            Trafico medio: {estacion.media} 
+                                                            Trafico diario: {estacion.media} 
                                                             {estacionOtra &&(
                                                                 <>
                                                                     <hr/>
                                                                     Sentido: {estacionOtra.sentido} <br/>
-                                                                    Trafico medio: {estacionOtra.media}
+                                                                    Trafico diario: {estacionOtra.media}
                                                                 </>
                                                             )}
                                                         </p>
@@ -371,7 +369,7 @@ const MapTrafico = ({ activatedOverlay,
                                                 </button>
                                                 <Modal isOpen={isOpenModal} 
                                                        closeModal={closeModal} 
-                                                       info={{data: 'Trafico', entidad: distrito, tipo: 'trafico distrito', idx: (distrito.codigo+1000)}}
+                                                       info={{data: 'Distrito', entidad: distrito, tipo: 'trafico distrito', idx: (distrito.codigo+1000)}}
                                                 >
                                                     <p style={{ fontWeight: 'bold' }}>
                                                         Nombre: {distrito.nombre} <br/>
@@ -411,7 +409,7 @@ const MapTrafico = ({ activatedOverlay,
                                                 </button>
                                                 <Modal isOpen={isOpenModal} 
                                                        closeModal={closeModal} 
-                                                       info={{data: 'Trafico', aforo: barrio, tipo: 'barrio', idx: barrio.id}}
+                                                       info={{data: 'Barrio', aforo: barrio, tipo: 'barrio', idx: barrio.id}}
                                                 >
                                                     <p style={{ fontWeight: 'bold' }}>
                                                         Nombre: {barrio.nombre} <br/>

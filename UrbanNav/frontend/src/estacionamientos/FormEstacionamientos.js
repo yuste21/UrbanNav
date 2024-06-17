@@ -1,10 +1,14 @@
-import { Form, Col, OverlayTrigger, Popover } from 'react-bootstrap';
-import { useDispatch, useSelector } from 'react-redux';
-import { handleChange, getDataEstacionamientosInicio, activarFiltro, vaciarFiltro } from '../features/estacionamiento/dataEstacionamientoSlice';
 import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Form, Col, OverlayTrigger, Popover } from 'react-bootstrap';
+import { 
+    handleChange, 
+    getDataEstacionamientosInicio, 
+    activarFiltro, 
+    vaciarFiltro 
+} from '../features/estacionamiento/dataEstacionamientoSlice';
 
 const FormEstacionamientos = ({ handleFilter }) => {
-
     const filtro = useSelector(state => state.estacionamientos.filtro)
     const [validated, setValidated] = useState(false)
     const dispatch = useDispatch()
@@ -12,7 +16,7 @@ const FormEstacionamientos = ({ handleFilter }) => {
     const [filtroAplicado, setFiltroAplicado] = useState([])
     useEffect(() => {
         setFiltroAplicado(filtroString(filtro))
-    }, [])
+    }, [filtro])
 
     const filtroString = (filtro) => {
         let resultado = []
@@ -71,8 +75,15 @@ const FormEstacionamientos = ({ handleFilter }) => {
     }
 
     const limpiarFiltro = () => {
-        dispatch(vaciarFiltro())
-        dispatch(getDataEstacionamientosInicio())
+        dispatch(vaciarFiltro());    // Limpiar filtro
+        const confirmacion = window.confirm('¿Deseas realizar la carga inicial de datos?');
+        
+        if (confirmacion) {
+            dispatch(getDataEstacionamientosInicio());     // Carga inicial
+        } else {
+            // Si el usuario no confirma, simplemente retornar
+            return;
+        }
     }
 
 
@@ -81,11 +92,10 @@ const FormEstacionamientos = ({ handleFilter }) => {
             <div className="card">
                 <div className="card-body">
                     <Form noValidate validated={validated} onSubmit={handleSubmit}>
+
                         {/* COLOR */}
-                        <div className='row mb-4'>
-                            <Form.Group as={Col}
-                                        className='d-flex align-items-center'    
-                            >
+                        <div className='row mb-2'>
+                            <Form.Group as={Col}className='d-flex flex-column align-items-start'>
                                 <Form.Label className='fw-bold me-2' htmlFor="color">Color</Form.Label>
                                 <Form.Control as="select"
                                             className='form-select'
@@ -108,10 +118,8 @@ const FormEstacionamientos = ({ handleFilter }) => {
                         </div>
 
                         {/* TIPO */}
-                        <div className='row mb-4'>
-                            <Form.Group as={Col} 
-                                        className='d-flex align-items-center'
-                            >   
+                        <div className='row mb-2'>
+                            <Form.Group as={Col} className='d-flex flex-column align-items-start'> 
                                 <Form.Label className='fw-bold me-2' htmlFor='tipo'>Tipo de aparcamiento</Form.Label>
                                 <Form.Control as="select"
                                               className='form-select'
@@ -129,37 +137,34 @@ const FormEstacionamientos = ({ handleFilter }) => {
                         </div>
 
                         {/* PLAZAS */}
-                        <div className='row mb-4'>
-                            <Form.Group as={Col}
-                                        className='d-flex align-items.center'
-                            >
-                                <Form.Label className="fw-bold me-2" htmlFor="plazas1">Mínimo plazas</Form.Label>
-                                <Form.Control type='number'
-                                              min="0"
-                                              max="60"
-                                              style={{ width: "100px" }}
-                                              id="plazas1"
-                                              name="plazas1"
-                                              value={filtro.plazas1}
-                                              onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                                              isInvalid={!!filtro.error.plazas}
-                                />
-                                <Form.Control.Feedback type='invalid'>
-                                    {filtro.error.plazas}
-                                </Form.Control.Feedback>
-                    
-                                <Form.Label className="fw-bold ms-4 me-2" htmlFor="plazas2">Máximo plazas</Form.Label>
-                                <Form.Control type='number'
-                                              min="0"
-                                              max="60"
-                                              style={{ width: "100px" }}
-                                              id="plazas2"
-                                              name="plazas2"
-                                              value={filtro.plazas2}
-                                              onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                                              isInvalid={!!filtro.error.plazas}
-                                />
-                                <Form.Control.Feedback type='invalid'>
+                        <div className='row mb-2'>
+                            <Form.Label className="fw-bold me-2 d-flex align-items-start" htmlFor="plazas1">Plazas</Form.Label>
+                            <Form.Group as={Col} xs={12} sm={6} className='d-flex flex-column align-items-start mb-2'>
+                                    <Form.Control type='number'
+                                                min="0"
+                                                max="60"
+                                                style={{ width: "100px" }}
+                                                id="plazas1"
+                                                name="plazas1"
+                                                placeholder='Mínimo'
+                                                value={filtro.plazas1}
+                                                onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                                isInvalid={!!filtro.error.plazas}
+                                    />
+                            </Form.Group>
+                            <Form.Group as={Col} xs={12} sm={6} className='d-flex flex-column align-items-start'>
+                                    <Form.Control type='number'
+                                                min="0"
+                                                max="60"
+                                                style={{ width: "100px" }}
+                                                id="plazas2"
+                                                name="plazas2"
+                                                placeholder='Máximo'
+                                                value={filtro.plazas2}
+                                                onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                                isInvalid={!!filtro.error.plazas}
+                                    />
+                                <Form.Control.Feedback type='invalid' style={{ display: 'block' }}>
                                     {filtro.error.plazas}
                                 </Form.Control.Feedback>
                             </Form.Group>

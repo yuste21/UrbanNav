@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
-import { URIsTrafico } from "./URIsTrafico"
+import { useDispatch, useSelector } from "react-redux"
 import Loader from "../loader/Loader"
 import NavbarPage from "../navbar/navbar"
 import MapTrafico from "./MapTrafico"
-import FormTrafico from "./FormTrafico"
 import BarChartTrafico from "../charts/Charts"
-import { URIsDistritos } from "../distritos/URIsDistritos"
-import { useDispatch, useSelector } from "react-redux"
-import { getDataTraficoInicio, getDataTraficoFiltro, getAllDataTrafico, initialFilter } from "../features/trafico/dataTraficoSlice"
+import { 
+    getDataTraficoInicio, 
+    getDataTraficoFiltro, 
+    getAllDataTrafico, 
+    initialFilter 
+} from "../features/trafico/dataTraficoSlice"
 
 function Trafico () {
     const dispatch = useDispatch()
@@ -60,29 +61,13 @@ function Trafico () {
     }
 
     return(
-        <div className="padre">
+        <div>
             <NavbarPage></NavbarPage>
             <div className="container">
                 {loading ?
                     <Loader/>
                 :
                     <>
-                        {/* <div className="row">
-                            {filtro.filtrado &&
-                                <div className="col">
-                                    {filtro.getAll === false &&
-                                        <h4>Filtrado por </h4>
-                                    }
-                                    <h4>{filtroString(filtro)}</h4>
-                                    {filtro.getAll === true &&
-                                        <h4> desde {fechaMin} hasta {fechaMax}</h4>
-                                    }
-                                </div>
-                            }
-                            <div className="col">
-                                <h4>Trafico Medio: {media}</h4>
-                            </div>
-                        </div> */}
                         <div className="row">
                             <div className={colMap}>
                                 <MapTrafico activatedOverlay={activatedOverlay}

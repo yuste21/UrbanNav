@@ -104,20 +104,32 @@ export const dataFlujoSlice = createSlice({
 
             let error = { ...state.filtro.error }
             if (name === 'hora1') {
-                error.hora = state.filtro.hora2 !== '' && value > state.filtro.hora2 
-                            ? 'Horas inválidas'
+                const tiempoMin = new Date(`1970-01-01T${value}Z`);
+                const tiempoMax = new Date(`1970-01-01T${state.filtro.hora2}Z`);
+
+                error.hora = state.filtro.hora2 !== '' && tiempoMin > tiempoMax && value !== ''
+                            ? 'La hora de inicio no puede ser posterior a la de fin'
                             : ''
             } else if (name === 'hora2') {
-                error.hora = state.filtro.hora1 !== '' && value < state.filtro.hora1
-                            ? 'Horas inválidas'
+                const tiempoMin = new Date(`1970-01-01T${state.filtro.hora1}Z`);
+                const tiempoMax = new Date(`1970-01-01T${value}Z`);
+
+                error.hora = state.filtro.hora1 !== '' && tiempoMax < tiempoMin && value !== ''
+                            ? 'La hora de fin no puede ser anterior a la de inicio'
                             : ''
             } else if (name === 'fecha1') {
-                error.fecha = state.filtro.fecha2 !== '' && value > state.filtro.fecha2 
-                                ? 'Fechas inválidas'
+                const fechaMin = new Date(value)
+                const fechaMax = new Date(state.filtro.fecha2)
+
+                error.fecha = state.filtro.fecha2 !== '' && fechaMin > fechaMax && value !== ''
+                                ? 'La fecha de inicio no puede ser posterior a la de fin'
                                 : ''
             } else if (name === 'fecha2') {
-                error.fecha = state.filtro.fecha1 !== '' && value < state.filtro.fecha1
-                                ? 'Fechas inválidas'
+                const fechaMin = new Date(state.filtro.fecha1)
+                const fechaMax = new Date(value)
+
+                error.fecha = state.filtro.fecha1 !== '' && fechaMax < fechaMin && value !== ''
+                                ? 'La fecha de fin no puede ser anterior a la de inicio'
                                 : ''
             }
  

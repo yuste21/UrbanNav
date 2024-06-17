@@ -1,9 +1,13 @@
-import React from 'react';
-import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
+import React, { useEffect } from 'react';
+import { Container, Form, Nav, Navbar, NavDropdown } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
+import { handleCheck } from '../features/help/helpSlice';
 
 function NavbarPage() {
     const location = useLocation();
+    const dispatch = useDispatch()
+    const help = useSelector(state => state.help.active)
 
     // Función para verificar si la ruta es activa
     const isActive = (path) => location.pathname === path;
@@ -11,20 +15,23 @@ function NavbarPage() {
     return (
         <Navbar expand="md" className="navbar sticky-top">
             <Container>
-                <Navbar.Brand href="/" className='link-custom'>Inicio</Navbar.Brand>
+                <Navbar.Brand href="/" className={`link-custom ${isActive('/') ? 'active' : ''}`}>Inicio</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="me-auto link-custom">
                         <Nav.Link href="/accidentes" className={`link-custom ${isActive('/accidentes') ? 'active' : ''}`}>Accidentes</Nav.Link>
                         <Nav.Link href="/estacionamientos" className={`link-custom ${isActive('/estacionamientos') ? 'active' : ''}`}>Estacionamientos</Nav.Link>
                         <Nav.Link href="/trafico" className={`link-custom ${isActive('/trafico') ? 'active' : ''}`}>Trafico</Nav.Link>
-                        <NavDropdown className='link-custom' title="Dropdown" id="basic-nav-dropdown">
+                        <NavDropdown className={`link-custom ${(isActive('/radares') || isActive('/multas')) ? 'active' : ''}`} title="Infracciones" id="basic-nav-dropdown">
                             <NavDropdown.Item href="/radares" className={`link-custom ${isActive('/radares') ? 'active' : ''}`}>Radares</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item href="/multas" className={`link-custom ${isActive('/multas') ? 'active' : ''}`}>Multas</NavDropdown.Item>
                         </NavDropdown>
                     </Nav>
                 </Navbar.Collapse>
+                <Nav.Link href='/manual' className={`link-custom ${isActive('/manual') ? 'active' : ''}`}>
+                    {isActive('/manual') ? <i className="bi bi-question-circle-fill"></i> : <i className="bi bi-question-circle"></i>}
+                </Nav.Link>
             </Container>
         </Navbar>
     );

@@ -1,13 +1,13 @@
-import { Col, Form, OverlayTrigger, Popover } from "react-bootstrap"
-import { useDispatch, useSelector } from "react-redux"
-import { activarFiltro, vaciarFiltro, handleChange, getMultasInicio } from "../features/radar/dataMultaSlice"
 import { useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { Col, Form, OverlayTrigger, Popover } from "react-bootstrap"
+import { activarFiltro, vaciarFiltro, handleChange, getMultasInicio } from "../features/radar/dataMultaSlice"
 
 const FormMultas = ({ handleFilter, handleClose }) => {
-
     const dispatch = useDispatch()
     const filtro = useSelector(state => state.multas.filtro)
     const barrios = useSelector(state => state.multas.barrios)
+    const [validated, setValidated] = useState(false)
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -20,15 +20,28 @@ const FormMultas = ({ handleFilter, handleClose }) => {
                 
             alert('Datos incompletos')
             return;
+        } else if (filtro.error.hora !== '' || filtro.error.coste !== '' 
+                || filtro.error.puntos !== '' || filtro.error.mes !== '') {
+            
+            setValidated(false)
+            return
         }
 
+        setValidated(true)
         dispatch(activarFiltro())
         handleFilter(filtro)
     }
 
     const limpiarFiltro = () => {
-        dispatch(vaciarFiltro())
-        dispatch(getMultasInicio())
+        dispatch(vaciarFiltro());    // Limpiar filtro
+        const confirmacion = window.confirm('¿Deseas realizar la carga inicial de datos?');
+        
+        if (confirmacion) {
+            dispatch(getMultasInicio());     // Carga inicial
+        } else {
+            // Si el usuario no confirma, simplemente retornar
+            return;
+        }
     }
 
     const popoverInfraccion = (
@@ -81,67 +94,89 @@ const FormMultas = ({ handleFilter, handleClose }) => {
                 </div>
             </div>
             <div className="card-body">
-                <Form onSubmit={(event) => handleSubmit(event)}>
+                <Form noValidate validated={validated} onSubmit={(event) => handleSubmit(event)}>
+
+                    {/* PUNTOS */}
                     <div className="row mb-3">
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
-                            <Form.Label className="fw-bold me-2" htmlFor="puntosMin">Penalizacion de puntos</Form.Label>
-                            <Form.Control type="number"
-                                          min="0"
-                                          max="15"
-                                          id="puntosMin"
-                                          name="puntosMin"
-                                          placeholder="Desde"
-                                          className="me-2"
-                                          value={filtro.puntosMin}
-                                          style={{ width: '100px' }}
-                                          onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                            />
-                            <Form.Control type="number"
-                                          min="0"
-                                          max="15"
-                                          name="puntosMax"
-                                          placeholder="Hasta"
-                                          className="me-2"
-                                          value={filtro.puntosMax}
-                                          style={{ width: '100px' }}
-                                          onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                            />
+                        <Form.Label className="fw-bold me-2" htmlFor="puntosMin">Puntos</Form.Label>
+                        <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Control type="number"
+                                            min="0"
+                                            max="15"
+                                            id="puntosMin"
+                                            name="puntosMin"
+                                            placeholder="Mínimo"
+                                            className="me-2"
+                                            value={filtro.puntosMin}
+                                            style={{ width: '200px' }}
+                                            onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                            isInvalid={!!filtro.error.puntos}
+                                />
+                            </div>
+                        </Form.Group>
+                        <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Control type="number"
+                                            min="0"
+                                            max="15"
+                                            name="puntosMax"
+                                            placeholder="Máximo"
+                                            className="me-2"
+                                            value={filtro.puntosMax}
+                                            style={{ width: '200px' }}
+                                            onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                            isInvalid={!!filtro.error.puntos}
+                                />
+                            </div>
+                            <Form.Control.Feedback type='invalid' style={{ display: 'block' }}>
+                                {filtro.error.puntos}
+                            </Form.Control.Feedback>
                         </Form.Group>
                     </div>
+
+                    {/* COSTE */}
                     <div className="row mb-3">
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
-                            <Form.Label className="fw-bold me-2" htmlFor="costeMin">Coste de la multa</Form.Label>
-                            <Form.Control type="number"
-                                          min="0"
-                                          max="1000"
-                                          id="costeMin"
-                                          name="costeMin"
-                                          placeholder="Desde"
-                                          className="me-2"
-                                          value={filtro.costeMin}
-                                          style={{ width: '200px' }}
-                                          onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                            />
-                            <Form.Control type="number"
-                                          min="0"
-                                          max="1000"
-                                          name="costeMax"
-                                          placeholder="Hasta"
-                                          className="me-2"
-                                          value={filtro.costeMax}
-                                          style={{ width: '200px' }}
-                                          onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                            />
+                        <Form.Label className="fw-bold me-2" htmlFor="costeMin">Coste</Form.Label>
+                        <Form.Group as={Col} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Control type="number"
+                                            min="0"
+                                            max="1000"
+                                            id="costeMin"
+                                            name="costeMin"
+                                            placeholder="Mínimo"
+                                            className="me-2"
+                                            value={filtro.costeMin}
+                                            style={{ width: '200px' }}
+                                            onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                            isInvalid={!!filtro.error.coste}
+                                />
+                            </div>
+                        </Form.Group>
+                        <Form.Group as={Col} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Control type="number"
+                                            min="0"
+                                            max="1000"
+                                            name="costeMax"
+                                            placeholder="Máximo"
+                                            className="me-2"
+                                            value={filtro.costeMax}
+                                            style={{ width: '200px' }}
+                                            onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                            isInvalid={!!filtro.error.coste}
+                                />
+                            </div>
+                            <Form.Control.Feedback type='invalid' style={{ display: 'block' }}>
+                                {filtro.error.coste}
+                            </Form.Control.Feedback>
                         </Form.Group>
                     </div>
+
+                    {/* CALIFICACION + DESCUENTO */}
                     <div className="row mb-3">  
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
+                        <Form.Group as={Col} className="d-flex flex-column align-items-start mb-2">
                             <Form.Label className="fw-bold me-2" htmlFor="calificacion">Calificacion</Form.Label>
                             <Form.Control as="select" 
                                           className='filtro-select' 
@@ -157,9 +192,7 @@ const FormMultas = ({ handleFilter, handleClose }) => {
                                     <option value="MUY GRAVE">Muy grave</option>
                             </Form.Control>
                         </Form.Group>
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
+                        <Form.Group as={Col} className="d-flex flex-column align-items-start">
                             <Form.Label className="fw-bold me-2" htmlFor="descuento">Descuento</Form.Label>
                             <Form.Control as="select"
                                           className="filtro-select"
@@ -175,32 +208,102 @@ const FormMultas = ({ handleFilter, handleClose }) => {
                             </Form.Control>
                         </Form.Group>
                     </div>
+
+                    {/* HORA */}
+                    <div className="row mb-3">
+                        <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Label className="fw-bold me-2" htmlFor="hora1">Desde</Form.Label>
+                                <Form.Control type="time"
+                                            className="me-4"
+                                            id="hora1"
+                                            name="horaMin"
+                                            value={filtro.horaMin}
+                                            onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                            isInvalid={!!filtro.error.hora}
+                                />
+                            </div>
+                        </Form.Group>
+                        <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Label className="fw-bold me-2" htmlFor="hora2">Hasta</Form.Label>
+                                <Form.Control type="time"
+                                            className="me-4"
+                                            name="horaMax"
+                                            value={filtro.horaMax}
+                                            onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                            isInvalid={!!filtro.error.hora}
+                                />
+                            </div>
+                            <Form.Control.Feedback type='invalid' style={{ display: 'block' }}>
+                                {filtro.error.hora}
+                            </Form.Control.Feedback>
+                        </Form.Group>
+                    </div>
+                    
+                    {/* MES */}
+                    <div className="row mb-3">
+                        <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Label className="fw-bold me-2" htmlFor="mes1">Desde</Form.Label>
+                                <Form.Control type="month"
+                                              id="mes1"
+                                              name="mesMin"
+                                              value={filtro.mesMin}
+                                              onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                              style={{ width: '210px' }}
+                                              className="me-4"
+                                              isInvalid={!!filtro.error.mes}
+                                />
+                            </div>
+                        </Form.Group>
+                        <Form.Group as={Col} xs={12} sm={6} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Label className="fw-bold me-2" htmlFor="mes2">Hasta</Form.Label>
+                                <Form.Control
+                                    type="month"
+                                    id="mes2"
+                                    name="mesMax"
+                                    value={filtro.mesMax}
+                                    onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
+                                    style={{ width: '210px' }}
+                                    isInvalid={!!filtro.error.mes}
+                                />
+                            </div>
+                            <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>
+                                {filtro.error.mes}
+                            </Form.Control.Feedback>
+                        </Form.Group>
+                    </div>
+
+                    {/* INFRACCION */}
                     <div className="row mb-3">  
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
+                        <Form.Group as={Col} className="d-flex flex-column align-items-start">
+                            <div className="d-flex align-items-center">
                             <Form.Label className="fw-bold me-2" htmlFor="infraccion">Infracción</Form.Label>
                             <Form.Control type="text" 
-                                          className='me-4' 
-                                          style={{ width: '300px' }} 
+                                          style={{ width: '80%' }} 
                                           id="infraccion"
                                           name="infraccion"
                                           value={filtro.infraccion} 
                                           onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
                             />
-                            <OverlayTrigger placement="right"
+                            </div>
+                        </Form.Group>
+                        <Col xs={12} sm={6} className="d-flex flex-column align-items-start">
+                            <OverlayTrigger placement="bottom"
                                             trigger='click'
                                             overlay={popoverInfraccion}
                                             style={{ width: '300px', height: '400px' }}
                             >
                                 <button type="button" className="btn">Ejemplos infracciones</button>
                             </OverlayTrigger>
-                        </Form.Group>
+                        </Col>
                     </div>
+
+                    {/* DENUNCIANTE + BARRIO */}
                     <div className="row mb-3">
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
+                        <Form.Group as={Col} className="d-flex flex-column align-items-start mb-3">
                             <Form.Label className="fw-bold me-2" htmlFor="denunciante">Denunciante</Form.Label>
                             <Form.Control as="select" 
                                           className='filtro-select' 
@@ -218,9 +321,7 @@ const FormMultas = ({ handleFilter, handleClose }) => {
                                     <option value="SACE">Servicio de apoyo al control de estacionamiento (SACE)</option>
                             </Form.Control>
                         </Form.Group>
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
+                        <Form.Group as={Col} className="d-flex flex-column align-items-start">
                             <Form.Label className="fw-bold me-2" htmlFor="barrio">Barrio</Form.Label>
                             <Form.Control as="select"
                                           className="filtro-select"
@@ -237,56 +338,7 @@ const FormMultas = ({ handleFilter, handleClose }) => {
                             </Form.Control>
                         </Form.Group>
                     </div>
-                    <div className="row mb-3">
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
-                            <Form.Label className="fw-bold me-2" htmlFor="mes">Desde</Form.Label>
-                            <Form.Control type="month"
-                                            id="mes1"
-                                            name="mesMin"
-                                            value={filtro.mesMin}
-                                            onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                                            style={{ width: '200px' }}
-                                            className="me-4"
-                                            isInvalid={!!filtro.error.mes}
-                            />
-                            <Form.Label className="fw-bold me-2" htmlFor="mes2">Hasta</Form.Label>
-                            <Form.Control type="month"
-                                            id="mes2"
-                                            name="mesMax"
-                                            value={filtro.mesMax}
-                                            onChange={(e) => dispatch(handleChange({ name: e.target.name, value: e.target.value }))}
-                                            style={{ width: '200px' }}
-                                            isInvalid={!!filtro.error.mes}
-                            />
-                            <Form.Control.Feedback type='invalid'>
-                                {filtro.error.mes}
-                            </Form.Control.Feedback>
-                        </Form.Group>
-                    </div>
-                    <div className="row mb-3">
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
-                            <Form.Label className="fw-bold me-2" htmlFor="hora1">Desde</Form.Label>
-                            <Form.Control type="time"
-                                          className="me-4"
-                                          id="hora1"
-                                          name="horaMin"
-                                          value={filtro.horaMin}
-                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                            />
-                            <Form.Label className="fw-bold me-2" htmlFor="hora2">Hasta</Form.Label>
-                            <Form.Control type="time"
-                                          className="me-4"
-                                          id="hora2"
-                                          name="horaMax"
-                                          value={filtro.horaMax}
-                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                            />
-                        </Form.Group>
-                    </div>
+
                     <input className="btn btn-azul me-4" type="submit" value="Filtrar"/>
                     <button className="btn btn-rojo" type="button" onClick={() => limpiarFiltro()}>Limpiar Filtro</button>
                 </Form>

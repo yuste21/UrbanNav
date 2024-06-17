@@ -11,7 +11,13 @@ export const initialFilter = {
     calificacion: '',
     horaMin: '',
     horaMax: '',
-    descuento: ''
+    descuento: '',
+    error: {
+        coste: '',
+        puntos: '',
+        hora: ''
+    },
+    filtrado: false
 }
 
 const initialState = {
@@ -58,10 +64,52 @@ export const dataRadarSlice = createSlice({
         },
         handleChange: (state, action) => {
             const { name, value } = action.payload
+
+            let error = { ...state.filtro.error }
+            
+            if (name === 'costeMin') {
+                error.coste = state.filtro.costeMax !== '' && parseInt(value) > parseInt(state.filtro.costeMax) && value !== ''
+                            ? 'El coste mínimo no puede ser mayor al máximo'
+                            : ''
+            } else if (name === 'costeMax') {
+                error.coste = state.filtro.costeMin !== '' && parseInt(value) < parseInt(state.filtro.costeMin) && value !== ''
+                            ? 'El coste máximo no puede ser inferior al mínimo'
+                            : ''
+            } else if (name === 'puntosMin') {
+                error.puntos = state.filtro.puntosMax !== '' && parseInt(value) > parseInt(state.filtro.puntosMax) && value !== ''
+                            ? 'El mínimo de puntos no puede ser mayor al máximo'
+                            : ''
+            } else if (name === 'puntosMax') {
+                error.puntos = state.filtro.puntosMin !== '' && parseInt(value) < parseInt(state.filtro.puntosMin) && value !== ''
+                            ? 'El máximo de puntos no puede ser inferior al mínimo'
+                            : ''
+            } else if (name === 'horaMin') {
+                const tiempoMin = new Date(`1970-01-01T${value}Z`);
+                const tiempoMax = new Date(`1970-01-01T${state.filtro.horaMax}Z`);
+                
+                console.log('Min = ' + tiempoMin)
+                console.log('Max = ' + tiempoMax)
+
+                error.hora = state.filtro.horaMax !== '' && tiempoMin > tiempoMax && value !== ''
+                            ? 'La hora de inicio no puede ser posterior a la de fin'
+                            : ''
+            } else if (name === 'horaMax') {
+                const tiempoMin = new Date(`1970-01-01T${state.filtro.horaMin}Z`);
+                const tiempoMax = new Date(`1970-01-01T${value}Z`);
+
+                console.log('Min = ' + tiempoMin)
+                console.log('Max = ' + tiempoMax)
+
+                error.hora = state.filtro.horaMin !== '' && tiempoMax < tiempoMin && value !== ''
+                            ? 'La hora de fin no puede ser anterior a la de inicio'
+                            : ''
+            }      
+
             return {
                 ...state,
                 filtro: {
                     ...state.filtro,
+                    error: error,
                     [name]: value
                 }
             }

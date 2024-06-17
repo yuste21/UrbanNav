@@ -1,9 +1,10 @@
-const baseUri = 'http://localhost:8000/estacionamientos/'
+const base = 'https://urbannav-backend.onrender.com/estacionamientos/'
+//const base = 'http://localhost:8000/estacionamientos/'
 
 export const URIsEstacionamientos = {
-    base: baseUri,
-    barrio: `${baseUri}/barrio`,
-    distrito: `${baseUri}/distrito`,
-    filtro: `${baseUri}/filtro`,
-    zonas: `${baseUri}/zonas`
+    base: base,
+    barrio: `${base}/barrio`,
+    distrito: `${base}/distrito`,
+    filtro: `${base}/filtro`,
+    zonas: `${base}/zonas`
 }

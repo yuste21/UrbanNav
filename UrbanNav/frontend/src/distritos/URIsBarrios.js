@@ -1,4 +1,5 @@
-const base = 'http://localhost:8000/barrios/'
+const base = 'https://urbannav-backend.onrender.com/barrios/'
+//const base = 'http://localhost:8000/barrios/'
 
 export const URIsBarrios = {
     getAll: base,

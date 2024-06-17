@@ -1,13 +1,13 @@
+import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import { MapContainer, Marker, Polygon, Popup, TileLayer } from "react-leaflet"
 import { SetViewOnClick, DisplayPosition, zoom, center } from "../MapFunctions" 
-import { useEffect, useState } from "react"
 import { useModal } from "../modal/useModal"
 import Modal from '../modal/Modal.js';
-import { useDispatch, useSelector } from "react-redux"
-import { getDataRadares, getRadares } from "../features/radar/dataRadarSlice"
 import { iconos } from "../markerIcons.js";
+import { getRadares } from "../features/radar/dataRadarSlice"
 
-function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, showBarChart, setShowTable }) {
+function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, showBarChart, showTable, setShowTable }) {
 
     const radares = useSelector(state => state.radares.dataRadares.radares)
     const dispatch = useDispatch()
@@ -61,7 +61,7 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
 
     return(
         <>
-            <div className="card mt-3 mb-3">
+            <div className="card m-3">
                 <div className="card-title">
                     {radares && radares.length &&
                         <h3>{radares.length} Radares | {contarMultas()} Multas</h3>
@@ -114,32 +114,21 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
                                      key={(distrito.id+100)}
                             >   
                                 <Popup>
-                                    <button className="btn"
-                                            onClick={() => {
-                                                setSelectedRadar(null)
-                                                setRadaresPrev(radares)
-                                                asignarRadares(distrito)
-                                                setActivateOverlay('Radares')
-                                            }}
-                                    >
-                                        Mostrar radares de este distrito
-                                    </button>
-                                    <button className="btn"
-                                            onClick={() => {
-                                                setSelectedRadar(null)
-                                                openModal(distrito.id+100)
-                                            }}
-                                    >
-                                        Info del distrito
-                                    </button>
-                                    <Modal isOpen={isOpenModal} 
-                                           closeModal={closeModal} 
-                                           info={{ data: 'Distrito', idx: (distrito.id+100) }}
-                                    >
-                                        <p style={{ fontWeight: 'bold' }}>
-                                            Nombre: {distrito.nombre !== '' ? distrito.nombre : 'Sin información'} <br/>
-                                        </p>
-                                    </Modal>
+                                    {distrito.barrios.find(barrio => barrio.radares.length > 0) &&
+                                        <button className="btn"
+                                                onClick={() => {
+                                                    setSelectedRadar(null)
+                                                    setRadaresPrev(radares)
+                                                    asignarRadares(distrito)
+                                                    setActivateOverlay('Radares')
+                                                }}
+                                        >
+                                            Mostrar radares de este distrito
+                                        </button>
+                                    }
+                                    <p style={{ fontWeight: 'bold' }}>
+                                        {distrito.nombre !== '' ? distrito.nombre : 'Sin información'} <br/>
+                                    </p>
                                 </Popup>
                             </Polygon>
                         ))}
@@ -148,8 +137,9 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
                                      key={index}
                             >
                                 <Popup>
-                                    <p>{barrio.nombre}</p> <br/>
-                                    <p>ID: {barrio.id}</p>
+                                    <p style={{ fontWeight: 'bold' }}>
+                                        {barrio.nombre}
+                                    </p>
                                 </Popup>
                             </Polygon>
                         ))}
@@ -182,10 +172,11 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
                                                 Tipo: {radar.radar.tipo !== '' ? radar.radar.tipo : 'Sin información'} <br/>
                                                 Sentido: {radar.radar.sentido !== '' ? radar.radar.sentido : 'Sin información'} <br/>
                                                 ID: {radar.radar.id} <br/>
-                                                Ubicacion: {radar.radar.ubicacion}
+                                                Ubicacion: {radar.radar.ubicacion} <br/>
+                                                {radar.multas > 0 ? `${radar.multas} Multas` : ''}
                                             </p>
                                         </Modal>
-                                        {radar.multas > 0 && (selectedRadar === null || selectedRadar.radar.id !== radar.radar.id) &&
+                                        {radar.multas > 0 && (selectedRadar === null || selectedRadar.radar.id !== radar.radar.id || (selectedRadar.radar.id === radar.radar.id && !showTable)) &&
                                             <button className="btn"
                                                     onClick={() => {
                                                         setSelectedRadar(radar)

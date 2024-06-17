@@ -1,13 +1,11 @@
-import LegendEstacionamientos from "./LegendEstacionamientos"
-import { SetViewOnClick, DisplayPosition, center, zoom } from "../MapFunctions" 
-import { URIsEstacionamientos } from "./URIsEstacionamientos"
-import { iconos } from "../markerIcons"
-import { MapContainer, Marker, Polygon, Popup, TileLayer } from "react-leaflet"
-import axios from 'axios'
 import { useState, useEffect, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { asignarEstacionamientos, handleChange, vaciarFiltro, activarFiltro, initialFilter } from "../features/estacionamiento/dataEstacionamientoSlice"
+import { MapContainer, Marker, Polygon, Popup, TileLayer } from "react-leaflet"
+import { iconos } from "../markerIcons"
+import { SetViewOnClick, DisplayPosition, center, zoom } from "../MapFunctions" 
+import LegendEstacionamientos from "./LegendEstacionamientos"
 import FormEstacionamientos from "./FormEstacionamientos"
+import { asignarEstacionamientos, initialFilter } from "../features/estacionamiento/dataEstacionamientoSlice"
 
 const MapEstacionamientos = ({ handleFilter }) => {
     const dispatch = useDispatch()

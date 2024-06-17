@@ -14,10 +14,9 @@ import { accidentesAux } from "./AccidenteController.js";
 
 export const getAllDistritos = async(req, res) => {
     try {
-        const distrito = await DistritoModel.findByPk(44)
-        const barriosAsocidados = await distrito.getBarrios()
+        const distritos = await DistritoModel.findAll()
 
-        res.json({ distrito, barriosAsocidados })
+        res.json(distritos)
     } catch (error) {
         console.log('Error en la consulta getAllDistritos: ', error)
         res.status(500).json({ message: 'Error en la consulta getAllDistritos' })

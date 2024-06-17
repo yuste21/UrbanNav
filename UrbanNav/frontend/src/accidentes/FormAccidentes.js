@@ -1,9 +1,15 @@
-import { useContext, useEffect, useState } from "react"
-import { Form, Col, Button } from 'react-bootstrap';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import { useState } from "react"
+import { Form, Col } from 'react-bootstrap';
 import { useDispatch, useSelector } from "react-redux";
-import { handleChange, initialFilter, vaciarFiltro, activarFiltro, getDataAccidentesInicio, initialError } from "../features/accidente/dataAccidenteSlice.js";
-import { store } from "../app/store.js";
+import { 
+    handleChange, 
+    vaciarFiltro, 
+    activarFiltro, 
+    getDataAccidentesInicio 
+} from "../features/accidente/dataAccidenteSlice.js";
+
+
 
 const FormAccidentes = ({ handleFilter, handleClose }) => {
     const dispatch = useDispatch()
@@ -12,18 +18,21 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
 
     const handleSubmit = (event) => {
         event.preventDefault()
-        const form = event.currentTarget
 
         if(!filtro.accidente && !filtro.alcohol && !filtro.clima && !filtro.drogas && !filtro.edad1 && 
             !filtro.edad2 && !filtro.fecha1 && !filtro.fecha2 && !filtro.hora1 && !filtro.hora2 && !filtro.lesion && 
             !filtro.sexo && !filtro.vehiculo && filtro.radio.distancia === 0) {
             alert('Datos incompletos')
             return;
+        } else if (filtro.radio.activo && filtro.radio.distancia === 0) {
+            alert('El radio no puede ser 0')
+            return
         } else if (filtro.error.edad !== '' || filtro.error.fecha !== '' || filtro.error.hora !== '') {
             event.stopPropagation()
             setValidated(false)
             return;
         }
+
         setValidated(true)
         dispatch(activarFiltro())
 
@@ -32,8 +41,15 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
 
 
     const limpiarFiltro = () => {
-        dispatch(vaciarFiltro())    //Limpiar filtro
-        dispatch(getDataAccidentesInicio())     //cargaInicial
+        dispatch(vaciarFiltro());    // Limpiar filtro
+        const confirmacion = window.confirm('¿Deseas realizar la carga inicial de datos?');
+        
+        if (confirmacion) {
+            dispatch(getDataAccidentesInicio());     // Carga inicial
+        } else {
+            // Si el usuario no confirma, simplemente retornar
+            return;
+        }
     }
 
     return(
@@ -47,6 +63,8 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
             </div>
             <div className='card-body'> 
                 <Form noValidate validated={validated} onSubmit={(event) => handleSubmit(event)} >
+
+                    {/* RADIO */}
                     <div className="row">
                             {!filtro.radio.activo ? 
                                 <button className="btn btn-azul mb-3 me-4" 
@@ -81,9 +99,11 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                             </>
                             }
                     </div>
-                    <div className="row mb-4">
+
+                    {/* ALCOHOL + DROGAS */}
+                    <div className="row mb-2">
                         <Form.Group as={Col} sm={12} md={6}
-                                    className="d-flex align-items-center mb-sm-2 mb-md-2 mb-2"
+                                    className="d-flex flex-column align-items-start mb-2 mb-md-0"
                         >
                             <Form.Label className="fw-bold me-2" htmlFor="alcohol">Alcohol</Form.Label>
                             <Form.Control as="select" 
@@ -101,7 +121,7 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                         </Form.Group>
 
                         <Form.Group as={Col} sm={12} md={6}
-                                    className="d-flex align-items-center"
+                                    className="d-flex flex-column align-items-start"
                         >
                             <Form.Label className="fw-bold me-2" htmlFor="drogas">Drogas</Form.Label>
                             <Form.Control as="select" 
@@ -118,9 +138,11 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                             </Form.Control>
                         </Form.Group>
                     </div>
-                    <div className="row mb-3">
+
+                    {/* VEHICULO + ACCIDENTE */}
+                    <div className="row mb-2">
                         <Form.Group as={Col} sm={12} md={6}
-                                    className="d-flex align-items-center mb-sm-2 mb-md-2 mb-2"
+                                    className="d-flex flex-column align-items-start mb-2 mb-md-0"
                         >
                             <Form.Label className="fw-bold me-2" htmlFor="vehiculo">Vehiculo</Form.Label>
                             <Form.Control as="select" 
@@ -151,7 +173,7 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                         </Form.Group>
                         
                         <Form.Group as={Col} sm={12} md={6}
-                                    className="d-flex align-items-center"
+                                    className="d-flex flex-column align-items-start"
                         >
                             <Form.Label className="fw-bold me-2" htmlFor="accidente">Accidente</Form.Label>
                             <Form.Control as="select" 
@@ -174,9 +196,11 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                             </Form.Control>
                         </Form.Group>
                     </div>
-                    <div className="row mb-3">
-                        <Col className="d-flex align-items-center">
-                            <Form.Label className='me-4 fw-bold'>Gravedad de la lesión:</Form.Label>
+
+                    {/* LESION */}
+                    <div className="row mb-2">
+                        <Col className="d-flex align-items-center flex-column align-items-sm-center">
+                            <Form.Label className='me-4 fw-bold'>Lesión:</Form.Label>
                             <Form.Check inline className="filtro-check-inline">
                                 <Form.Check.Input 
                                     type="radio" 
@@ -223,9 +247,11 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                             </Form.Check>
                         </Col>
                     </div>
-                    <div className="row mb-3">  
+
+                    {/* SEXO + CLIMA */}
+                    <div className="row mb-2">  
                         <Form.Group as={Col} sm={12} md={6}
-                                    className="d-flex align-items-center mb-sm-2 mb-md-2 mb-2"
+                                    className="d-flex flex-column align-items-start mb-2 mb-md-0"
                         >
                             <Form.Label className="fw-bold me-2" htmlFor="sexo">Sexo</Form.Label>
                             <Form.Control as="select" 
@@ -243,7 +269,7 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                         </Form.Group>
 
                         <Form.Group as={Col} xs={6} sm={6} md={6} lg={6} xl={6}
-                                    className="d-flex align-items-center"
+                                    className="d-flex flex-column align-items-start"
                         >
                             <Form.Label className="fw-bold me-2" htmlFor="clima">Clima</Form.Label>
                             <Form.Control as="select" 
@@ -263,96 +289,109 @@ const FormAccidentes = ({ handleFilter, handleClose }) => {
                             </Form.Control>
                         </Form.Group>
                     </div>
-                    <div className="row mb-3">
-                        <Form.Group as={Col}
-                                    className="d-flex align-items-center"
-                        >
-                            <Form.Label className="fw-bold me-2" htmlFor="edad1">Edad mínima</Form.Label>
+
+                    {/* EDAD */}
+                    <div className="row mb-2">
+                        <Form.Label className="fw-bold me-2" htmlFor="edad1">Edad</Form.Label>
+                        <Form.Group as={Col} xs={12} md={6} className="d-flex flex-column align-items-start mb-2">
                             <Form.Control type="number"
-                                          min="0"
-                                          max="74"
-                                          id="edad1"
-                                          name="edad1"
-                                          className="me-2"
-                                          value={filtro.edad1}
-                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                                          isInvalid={!!filtro.error.edad}
+                                min="0"
+                                max="74"
+                                id="edad1"
+                                name="edad1"
+                                className="me-2"
+                                style={{ width: '200px' }}
+                                value={filtro.edad1}
+                                placeholder='Mínima'
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                isInvalid={!!filtro.error.edad}
                             />
-                            <Form.Control.Feedback type="invalid">
-                                {filtro.error.edad}
-                            </Form.Control.Feedback>
-                            <Form.Label className="fw-bold me-2" htmlFor="edad2">Edad máxima</Form.Label>
+                        </Form.Group>
+                        <Form.Group as={Col} xs={12} md={6} className="d-flex flex-column align-items-start">
                             <Form.Control type="number"
-                                          min="0"
-                                          max="74"
-                                          className="me-2"
-                                          name="edad2"
-                                          value={filtro.edad2}
-                                          onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                                          isInvalid={!!filtro.error.edad}
+                                min="0"
+                                max="74"
+                                name="edad2"
+                                className="me-2"
+                                style={{ width: '200px' }}
+                                value={filtro.edad2}
+                                placeholder='Máxima'
+                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                isInvalid={!!filtro.error.edad}
                             />
-                            <Form.Control.Feedback type="invalid">
-                                {filtro.error.edad}
+                            <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>
+                            {filtro.error.edad}
                             </Form.Control.Feedback>
                         </Form.Group>
                     </div>
-                    <div className="row mb-3">
-                        <Col className="d-flex align-items-center mb-3">
-                            <Form.Label className='fw-bold me-2' htmlFor="hora1">Desde</Form.Label>
-                            <Form.Control 
-                                type="time" 
-                                className='me-2' 
-                                value={filtro.hora1} 
-                                id="hora1"
-                                name="hora1"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
-                                isInvalid={!!filtro.error.hora}
-                            />
-                            <Form.Control.Feedback type="invalid">
+
+                    {/* HORA */}
+                    <div className="row mb-2">
+                        <Form.Group as={Col} xs={12} sm={6} className='d-flex flex-column align-items-start'>
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Label className='fw-bold me-2' htmlFor="hora1">Desde</Form.Label>
+                                <Form.Control 
+                                    type="time" 
+                                    className='me-2' 
+                                    value={filtro.hora1} 
+                                    id="hora1"
+                                    name="hora1"
+                                    onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))}
+                                    isInvalid={!!filtro.error.hora}
+                                />
+                            </div>
+                        </Form.Group>
+                        <Form.Group as={Col} xs={12} sm={6} className='d-flex flex-column align-items-start'>
+                            <div className="d-flex align-items-center mb-2">
+                                <Form.Label className='fw-bold me-2' htmlFor="hora2">Hasta</Form.Label>
+                                <Form.Control 
+                                    type="time" 
+                                    value={filtro.hora2} 
+                                    id="hora2"
+                                    name="hora2"
+                                    onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
+                                    isInvalid={!!filtro.error.hora}
+                                />
+                            </div>
+                            <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>
                                 {filtro.error.hora}
                             </Form.Control.Feedback>
-                            <Form.Label className='fw-bold me-2' htmlFor="hora2">Hasta</Form.Label>
-                            <Form.Control 
-                                type="time" 
-                                value={filtro.hora2} 
-                                id="hora2"
-                                name="hora2"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
-                                isInvalid={!!filtro.error.hora}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                {filtro.error.hora}
-                            </Form.Control.Feedback>
-                        </Col>
+                        </Form.Group>
                     </div>
+
+                    {/* FECHA */}
                     <div className="row mb-3">
-                        <Col className="d-flex align-items-center mb-3">
-                            <Form.Label className='fw-bold me-2' htmlFor="fecha1">Desde</Form.Label>
-                            <Form.Control 
-                                type="date" 
-                                className='me-2' 
-                                value={filtro.fecha1} 
-                                id="fecha1"
-                                name="fecha1"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
-                                isInvalid={!!filtro.error.fecha}
-                            />
-                            <Form.Control.Feedback type="invalid">
+                        <Form.Group as={Col} xs={12} sm={6} className='d-flex flex-column align-items-start'>
+                            <div className='d-flex align-items-center mb-2'>
+                                <Form.Label className='fw-bold me-2' htmlFor="fecha1">Desde</Form.Label>
+                                <Form.Control 
+                                    type="date" 
+                                    className='me-2' 
+                                    value={filtro.fecha1} 
+                                    id="fecha1"
+                                    name="fecha1"
+                                    onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
+                                    isInvalid={!!filtro.error.fecha}
+                                />
+                            </div>
+                        </Form.Group>
+                        <Form.Group as={Col} xs={12} sm={6} className='d-flex flex-column align-items-start'>
+                            <div className='d-flex align-items-center mb-2'>
+                                <Form.Label className='fw-bold me-2' htmlFor="fecha2">Hasta</Form.Label>
+                                <Form.Control 
+                                    type="date" 
+                                    value={filtro.fecha2} 
+                                    id="fecha2"
+                                    name="fecha2"
+                                    onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
+                                    isInvalid={!!filtro.error.fecha}
+                                />
+                            </div>
+                            <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>
                                 {filtro.error.fecha}
                             </Form.Control.Feedback>
-                            <Form.Label className='fw-bold me-2' htmlFor="fecha2">Hasta</Form.Label>
-                            <Form.Control 
-                                type="date" 
-                                value={filtro.fecha2} 
-                                id="fecha2"
-                                name="fecha2"
-                                onChange={(e) => dispatch(handleChange({name: e.target.name, value: e.target.value}))} 
-                                isInvalid={!!filtro.error.fecha}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                {filtro.error.fecha}
-                            </Form.Control.Feedback>
-                        </Col>
+                        </Form.Group>
+
                     </div>
                     <input className="btn btn-azul me-4" type="submit" value="Filtrar"></input>
                     <button className='btn btn-rojo' type='button' onClick={() => limpiarFiltro()}>Limpiar filtro</button>

@@ -1,13 +1,13 @@
-import { useEffect, useState, useContext, useDeferredValue } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap, Circle, LayersControl, LayerGroup } from 'react-leaflet';
-import { SetViewOnClick, DisplayPosition, zoom, center, DraggableMarker } from '../MapFunctions.js';
+import { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux';
+import { Offcanvas, OverlayTrigger, Popover } from 'react-bootstrap';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle } from 'react-leaflet';
+import { initialFilter, asignarAccidentes } from '../features/accidente/dataAccidenteSlice.js';
+import { DisplayPosition, zoom, center, DraggableMarker } from '../MapFunctions.js';
 import LegendAccidentes from './LegendAccidentes.js';
+import FormAccidentes from './FormAccidentes.js';
 import Modal from '../modal/Modal.js';
 import { useModal } from '../modal/useModal.js';
-import FormAccidentes from './FormAccidentes.js';
-import { Button, Offcanvas, OverlayTrigger, Popover } from 'react-bootstrap';
-import { useDispatch, useSelector } from 'react-redux';
-import { initialFilter, asignarAccidentes } from '../features/accidente/dataAccidenteSlice.js';
 
 const fillBlueOptions = { fillColor: 'blue' }
 
@@ -29,7 +29,7 @@ const MapAccidentes = ({handleFilter,
     const [filtroAplicado, setFiltroAplicado] = useState([])
     useEffect(() => {
         setFiltroAplicado(filtroString(filtro))
-    }, [])
+    }, [filtro])
 
     const [showForm, setShowForm] = useState(false)
     const handleClose = () => setShowForm(false);
@@ -140,27 +140,35 @@ const MapAccidentes = ({handleFilter,
     const [eventZonaPrevia, setEventZonaPrevia] = useState(null)
 
     const handleClick = (event, zona, riesgo) => {
-        
+
         if(eventZonaPrevia !== null) {
             eventZonaPrevia.event.target.setStyle({ fillColor: eventZonaPrevia.color })
         }
 
-        if(zonaClickeada) {
+        console.log('Zona.id = ' + zona.id)
+        console.log('ZonaSeleccionada.id = ' + zonaSeleccionada.id)
+
+        if (zona.id === zonaSeleccionada.id && zonaClickeada) {
+            setZonaClickeada(false)
+            setZonaSeleccionada(null)
+
             setEventZonaPrevia(null)
-        } else {
-            const fillColor = zona.riesgo < (riesgo - riesgo*0.5) ? ' #2A81CB' : zona.riesgo < riesgo ? '#FFD326' : zona.riesgo < (riesgo + riesgo*0.5) ? '#CB8427' : '#CB2B3E'
-            setEventZonaPrevia({ event: event, color: fillColor })
-            setZonaSeleccionada(zona)
-        }
-        if(zonaClickeada) {
-            obtenerDatosGrafica('clima.clima', 'DeseleccionadoBar')
-            obtenerDatosGrafica('tipo_accidente.tipo_accidente', 'DeseleccionadoPie')
-        } else {
+
             obtenerDatosGrafica('clima.clima', 'Bar')
             obtenerDatosGrafica('tipo_accidente.tipo_accidente', 'Pie')
+        } else {
+            setZonaClickeada(true)
+            const fillColor = zona.riesgo < (riesgo - riesgo*0.5) ? ' #2A81CB' : zona.riesgo < riesgo ? '#FFD326' : zona.riesgo < (riesgo + riesgo*0.5) ? '#CB8427' : '#CB2B3E'
+            event.target.setStyle({ fillColor: 'rgba(4, 4, 252, 0)' })
+
+            setEventZonaPrevia({ event: event, color: fillColor })
+            setZonaSeleccionada(zona)
+
+            obtenerDatosGrafica('clima.clima', 'DeseleccionadoBar')
+            obtenerDatosGrafica('tipo_accidente.tipo_accidente', 'DeseleccionadoPie')
+
         }
-        setZonaClickeada(!zonaClickeada)
-        //setShowForm(!showForm)
+
     }
 
     const handleMouseOut = (event, zona, riesgo) => {
@@ -261,10 +269,10 @@ const MapAccidentes = ({handleFilter,
 
                                     {accidentes.length < 500 &&
                                     <>
-                                        <label className="me-2" htmlFor="barrio">Accidentes</label>
+                                        <label className="me-2" htmlFor="accidentes">Accidentes</label>
                                         <input
                                             type="checkbox"
-                                            id="barrio"
+                                            id="accidentes"
                                             className="me-4"
                                             checked={activateOverlay.includes("Accidentes")}
                                             onChange={() => handleOverlayChange('Accidentes')}
@@ -395,6 +403,7 @@ const MapAccidentes = ({handleFilter,
                                                         Hora: {accidente.hora} <br/>
                                                         Clima: {accidente.clima.clima} <br/>
                                                         {otros && <hr/>}
+                                                        Persona 1 <br/>
                                                         Edad: {accidente.edad} <br/>
                                                         Positivo en drogas: {accidente.drogas ? 'Si' : 'No'} <br/>
                                                         Positivo en alcohol: {accidente.alcohol ? 'Si' : 'No'} <br/>
@@ -405,9 +414,10 @@ const MapAccidentes = ({handleFilter,
                                                         Tipo de accidente: {accidente.tipo_accidente.tipo_accidente} <br/>
                                                         Vehiculo: {accidente.tipo_vehiculo.tipo_vehiculo} <br/>
                                                         {accidente.tipo_persona.tipo_persona} <br/>
-                                                        {otros && otros.map((el) => (
+                                                        {otros && otros.map((el, index) => (
                                                             <>
                                                                 <hr/>
+                                                                Persona {index + 2} <br/>
                                                                 Edad: {el.edad} <br/>
                                                                 Positivo en drogas: {el.drogas ? 'Si' : 'No'} <br/>
                                                                 Positivo en alcohol: {el.alcohol ? 'Si' : 'No'} <br/>
@@ -442,7 +452,7 @@ const MapAccidentes = ({handleFilter,
                             <i class="bi bi-filter"></i>
                         </button>
                     }
-                    <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }} className="canvas">
+                    <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }} className="canvas custom-offcanvas">
                         <Offcanvas.Body>
                             <FormAccidentes handleFilter={handleFilter}
                                             handleClose={handleClose}

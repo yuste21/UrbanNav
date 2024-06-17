@@ -1,8 +1,8 @@
 import { useCallback, useState, useMemo, useRef, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import { useMap, Marker, Popup } from "react-leaflet"
 import { iconos } from "./markerIcons"
 import { handleChange, olvidar } from "./features/accidente/dataAccidenteSlice"
-import { useDispatch, useSelector } from "react-redux"
 
 export const center = [40.41688189428294, -3.703318510771146]
 export const zoom = 11

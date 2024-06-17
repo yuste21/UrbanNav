@@ -61,35 +61,47 @@ export const dataMultaSlice = createSlice({
             var error = { ...state.filtro.error }
 
             if (name === 'horaMin') {
-                error.hora = state.filtro.horaMax !== '' && value > state.filtro.horaMax 
+                const tiempoMin = new Date(`1970-01-01T${value}Z`);
+                const tiempoMax = new Date(`1970-01-01T${state.filtro.horaMax}Z`);
+
+                error.hora = state.filtro.horaMax !== '' && tiempoMin > tiempoMax && value !== ''
                             ? 'La hora de inicio no puede ser posterior a la de fin'
                             : ''
             } else if (name === 'horaMax') {
-                error.hora = state.filtro.horaMin !== '' && value < state.filtro.horaMin 
+                const tiempoMin = new Date(`1970-01-01T${state.filtro.horaMin}Z`);
+                const tiempoMax = new Date(`1970-01-01T${value}Z`);
+
+                error.hora = state.filtro.horaMin !== '' && tiempoMax < tiempoMin && value !== ''
                             ? 'La hora de fin no puede ser anterior a la de inicio'
                             : ''
-            } else if (name === 'puntosMin') {
-                error.puntos = state.filtro.puntosMax !== '' && value > state.filtro.puntosMax
-                            ? 'Los puntos mínimos no pueden ser mayores a los máximos'
-                            : ''
-            } else if (name === 'puntosMax') {
-                error.puntos = state.filtro.puntosMin !== '' && value < state.filtro.puntosMin
-                            ? 'Los puntos máximos no pueden ser menores a los mínimos'
-                            : ''
             } else if (name === 'costeMin') {
-                error.coste = state.filtro.costeMax !== '' && value > state.filtro.costeMax
+                error.coste = state.filtro.costeMax !== '' && parseInt(value) > parseInt(state.filtro.costeMax) && value !== ''
                             ? 'El coste mínimo no puede ser mayor al máximo'
                             : ''
             } else if (name === 'costeMax') {
-                error.coste = state.filtro.costeMin !== '' && value < state.filtro.costeMin
-                            ? 'El coste máximo no puede ser menor al mínimo'
+                error.coste = state.filtro.costeMin !== '' && parseInt(value) < parseInt(state.filtro.costeMin) && value !== ''
+                            ? 'El coste máximo no puede ser inferior al mínimo'
+                            : ''
+            } else if (name === 'puntosMin') {
+                error.puntos = state.filtro.puntosMax !== '' && parseInt(value) > parseInt(state.filtro.puntosMax) && value !== ''
+                            ? 'El mínimo de puntos no puede ser mayor al máximo'
+                            : ''
+            } else if (name === 'puntosMax') {
+                error.puntos = state.filtro.puntosMin !== '' && parseInt(value) < parseInt(state.filtro.puntosMin) && value !== ''
+                            ? 'El máximo de puntos no puede ser inferior al mínimo'
                             : ''
             } else if (name === 'mesMin') {
-                error.mes = state.filtro.mesMax !== '' && value > state.filtro.mesMax
+                const mes1 = new Date(`${value}-01`);
+                const mes2 = new Date(`${state.filtro.mesMax}-01`);
+                
+                error.mes = state.filtro.mesMax !== '' && mes1 > mes2 && value !== ''
                             ? 'El mes inicial no puede ser posterior al final'
                             : ''
             } else if (name === 'mesMax') {
-                error.mes = state.filtro.mesMin !== '' && value < state.filtro.mesMin
+                const mes1 = new Date(`${state.filtro.mesMin}-01`);
+                const mes2 = new Date(`${value}-01`);
+
+                error.mes = state.filtro.mesMin !== '' && mes2 < mes1 && value !== ''
                             ? 'El mes final no puede ser anterior al inicial'
                             : ''
             }

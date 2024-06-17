@@ -1,11 +1,11 @@
+import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { Offcanvas, OverlayTrigger, Popover } from "react-bootstrap"
+import { getDataRadaresInicio, getDataRadaresFiltro, initialFilter } from "../features/radar/dataRadarSlice"
 import Loader from "../loader/Loader"
 import NavbarPage from "../navbar/navbar"
-import { useEffect, useState } from "react"
 import MapRadares from "./MapRadares"
-import { useDispatch, useSelector } from "react-redux"
-import { activarFiltro, getDataRadaresInicio, getDataRadaresFiltro, initialFilter } from "../features/radar/dataRadarSlice"
 import Charts from "../charts/Charts"
-import { Offcanvas, OverlayTrigger, Popover } from "react-bootstrap"
 import FormRadares from "./FormRadares"
 import DynamicTable from "../table/DynamicTable"
 
@@ -26,7 +26,7 @@ function Radares () {
     const [selectedRadar, setSelectedRadar] = useState(null)
     const [showTable, setShowTable] = useState(false)
     useEffect(() => {
-        if (showBarChart || showTable) {
+        if (showBarChart) {
             setColMap('col-xl-6 col-lg-12')
             setLeftCol('col-xl-6 col-lg-12')
         } else {
@@ -60,7 +60,7 @@ function Radares () {
     const [filtroAplicado, setFiltroAplicado] = useState([])
     useEffect(() => {
         setFiltroAplicado(filtroString(filtro))
-    }, [])
+    }, [filtro])
 
     const filtroString = (filtro) => {
         let resultado = []
@@ -163,7 +163,7 @@ function Radares () {
     }
 
     return(
-        <div className="padre">
+        <div>
             <NavbarPage></NavbarPage>
             <div className="container" style={{ position: 'relative' }}>
                 {loading ? 
@@ -192,13 +192,25 @@ function Radares () {
                                         }
                                     </>
                                 }
-                                <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }} className="canvas">
+                                <Offcanvas show={showForm} onHide={handleClose} style={{ width: '650px' }} className="custom-offcanvas canvas">
                                     <Offcanvas.Body>
                                         <FormRadares handleFilter={handleFilter}
                                                     handleClose={handleClose}
                                         />
                                     </Offcanvas.Body>
                                 </Offcanvas>
+                                {showTable &&
+                                    <div className="row">
+                                        <button className="btn"
+                                                onClick={() => {
+                                                    setShowTable(false)
+                                                    if (!showBarChart) setSelectedRadar(null)
+                                                }}
+                                        >
+                                            Ocultar tabla
+                                        </button>
+                                    </div>
+                                }
                                 {showBarChart ?
                                     <>
                                         {/* BarChart */}
@@ -206,8 +218,8 @@ function Radares () {
                                             <button className="btn mt-3"
                                                 onClick={() => {
                                                     setShowBarChart(false)
-                                                    setSelectedRadar(null)
-                                                } }
+                                                    if (!showTable) setSelectedRadar(null)
+                                                }}
                                             >
                                                 Ocultar grafica
                                             </button>
@@ -219,7 +231,7 @@ function Radares () {
                                         </div>
                                         
                                     </>
-                            :
+                                :
                                     <button className="btn mt-3"
                                             onClick={() => {
                                                 setShowBarChart(true)
@@ -230,7 +242,7 @@ function Radares () {
                                     >
                                         <i className={icon}></i>
                                     </button>
-                            }
+                                }
                             
                             </div>
                             {/* Map */}
@@ -240,6 +252,7 @@ function Radares () {
                                             selectedRadar={selectedRadar}
                                             setSelectedRadar={setSelectedRadar}
                                             showBarChart={showBarChart}
+                                            showTable={showTable}
                                             setShowTable={setShowTable}
                                 />
                             </div>

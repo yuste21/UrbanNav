@@ -23,17 +23,9 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                     value={'sexo.sexo'} 
                     checked={agrupacion === 'sexo.sexo'} 
                     name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} />
+                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')}
+            />
             Sexo
-            </label>
-
-            <label className='me-3'>
-            <input  type='radio' 
-                    value={'clima.clima'} 
-                    checked={agrupacion === 'clima.clima'} 
-                    name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} />
-            Clima
             </label>
 
             <label className='me-3'>
@@ -41,7 +33,8 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                     value={'edad'} 
                     checked={agrupacion === 'edad'} 
                     name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} />
+                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} 
+            />
             Edad
             </label>
 
@@ -50,7 +43,8 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                     value={'alcohol'} 
                     checked={agrupacion === 'alcohol'} 
                     name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} />
+                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} 
+            />
             
             Alcohol
             </label> 
@@ -60,7 +54,8 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                     value={'drogas'} 
                     checked={agrupacion === 'drogas'} 
                     name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} />
+                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} 
+            />
             
             Drogas
             </label> <br/>
