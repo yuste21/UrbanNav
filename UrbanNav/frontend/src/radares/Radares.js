@@ -11,11 +11,6 @@ import DynamicTable from "../table/DynamicTable"
 
 function Radares () {
 
-    useEffect(() => {
-        const url = process.env.REACT_APP_URL_BACKEND
-        console.log(url)
-    }, [])
-
     const radares = useSelector(state => state.radares.dataRadares.radares)
     const barrios = useSelector(state => state.radares.dataRadares.barrios)
     const distritos = useSelector(state => state.radares.dataRadares.distritos)
@@ -36,8 +31,8 @@ function Radares () {
             setColMap('col-xl-6 col-lg-12')
             setLeftCol('col-xl-6 col-lg-12')
         } else {
-            setColMap('col-11')
-            setLeftCol('col-1')
+            setColMap('col-sm-11 col-12')
+            setLeftCol('col-sm-1 col-12')
         }
     }, [showBarChart, showTable])
     
@@ -154,6 +149,11 @@ function Radares () {
         return data
     }
 
+    useEffect(() => {
+        if (selectedRadar !== null && !showTable) setShowTable(true)
+
+    }, [selectedRadar])
+
     const dataColumns = () => {
         return [
             { header: 'Mes', accessor: 'mes'},
@@ -205,7 +205,7 @@ function Radares () {
                                         />
                                     </Offcanvas.Body>
                                 </Offcanvas>
-                                {showTable &&
+                                {showTable && selectedRadar !== null &&
                                     <div className="row">
                                         <button className="btn"
                                                 onClick={() => {

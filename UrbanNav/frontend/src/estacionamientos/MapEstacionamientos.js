@@ -102,14 +102,6 @@ const MapEstacionamientos = ({ handleFilter }) => {
         }
     }
 
-    function calcularTotal(distrito) {
-        var total = 0
-        distrito.barrios.forEach((barrio) => {
-            total += barrio.estacionamientos.length
-        })
-        return total
-    }
-
     //Tipo de zona seleccionada: distrito o barrio (LayersControl)
     const [activateOverlay, setActivateOverlay] = useState('Distritos')
     useEffect(() => {
@@ -122,6 +114,8 @@ const MapEstacionamientos = ({ handleFilter }) => {
 
     const handleOverlayChange = (selectedOverlay) => {
         var aux = activateOverlay.split(' ')
+        setZonaSeleccionada(null)
+        setZonaClickeada(false)
         if(activateOverlay.includes(selectedOverlay)) {     //Desactivo checkbox
             var filtrado = aux.filter(el => el !== selectedOverlay && el !== '')
             setActivateOverlay(filtrado.length > 0 ? filtrado[0] : '')
@@ -141,7 +135,7 @@ const MapEstacionamientos = ({ handleFilter }) => {
         <div className="row">
             <div className="col-xl-7 col-lg-12">
                 {zonaSeleccionada !== null && zonaSeleccionada.codigo ?  //Es un distrito
-                    <h1>Estacionamientos: {calcularTotal(zonaSeleccionada)}</h1>
+                    <h1>Estacionamientos: {zonaSeleccionada.n_estacionamientos}</h1>
                 : zonaSeleccionada !== null && zonaSeleccionada.nombre ?    //Es un barrio
                     <h1>Estacionamientos: {zonaSeleccionada.estacionamientos.length}</h1>
                 
@@ -221,7 +215,7 @@ const MapEstacionamientos = ({ handleFilter }) => {
                                                     positions={distrito.delimitaciones}
                                         >
                                             <Popup>
-                                                <button className="btn"
+                                                <button className="btn btn-hover"
                                                         onClick={() => {
                                                             setEstacionamientosPrev(estacionamientos)
                                                             setZonaSeleccionada(null)
@@ -229,6 +223,11 @@ const MapEstacionamientos = ({ handleFilter }) => {
                                                             dispatch(asignarEstacionamientos({ estacionamientos: distrito, tipo: 'distrito', nombre: distrito.nombre}))
                                                         }}
                                                 >Ver estacionamientos de este distrito</button>
+                                                <p style={{ fontWeight: 'bold' }}>
+                                                    {distrito.nombre} <br/>
+                                                    Codigo: {distrito.codigo} <br/>
+                                                    {distrito.n_estacionamientos} Estacionamientos <br/>
+                                                </p>
                                             </Popup>
                                         </Polygon>
                                     ))} 
@@ -250,7 +249,7 @@ const MapEstacionamientos = ({ handleFilter }) => {
                                                     positions={barrio.delimitaciones}
                                         >
                                             <Popup>
-                                                <button className="btn"
+                                                <button className="btn btn-hover"
                                                         onClick={() => {
                                                             setEstacionamientosPrev(estacionamientos)
                                                             setZonaSeleccionada(null)
@@ -258,6 +257,10 @@ const MapEstacionamientos = ({ handleFilter }) => {
                                                             dispatch(asignarEstacionamientos({ estacionamientos: barrio.estacionamientos, tipo: 'barrio', nombre: barrio.nombre }))
                                                         }}
                                                 >Ver estacionamientos de este barrio</button>
+                                                <p style={{ fontWeight: 'bold' }}>
+                                                    {barrio.nombre} <br/>
+                                                    {barrio.estacionamientos.length} Estacionamientos
+                                                </p>
                                             </Popup>
                                         </Polygon>
                                     ))}

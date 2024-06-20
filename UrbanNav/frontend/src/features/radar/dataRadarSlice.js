@@ -40,7 +40,7 @@ export const getDataRadaresInicio = createAsyncThunk('radares/getRadaresInicio',
 export const getDataRadaresFiltro = createAsyncThunk('radares/getRadaresFiltro', async (req, res) => {
     const filtro = req
     return axios
-        .get(`${URIsRadares.filtro}?puntosMin=${filtro.costeMin}&puntosMax=${filtro.costeMax}` +
+        .get(`${URIsRadares.filtro}?puntosMin=${filtro.puntosMin}&puntosMax=${filtro.puntosMax}` +
                                   `&costeMin=${filtro.costeMin}&costeMax=${filtro.costeMax}` +
                                   `&horaMin=${filtro.horaMin}&horaMax=${filtro.horaMax}` +
                                   `&calificacion=${filtro.calificacion}&descuento=${filtro.descuento}`
@@ -89,19 +89,25 @@ export const dataRadarSlice = createSlice({
             
             if (name === 'costeMin') {
                 error.coste = state.filtro.costeMax !== '' && parseInt(value) > parseInt(state.filtro.costeMax) && value !== ''
-                            ? 'El coste mínimo no puede ser mayor al máximo'
+                            ? 'El coste mínimo no puede ser mayor al máximo' :
+                            parseInt(value) < 0 || parseInt(state.filtro.costeMax) < 0 ? 'El coste debe ser mayor o igual a 0' 
                             : ''
             } else if (name === 'costeMax') {
                 error.coste = state.filtro.costeMin !== '' && parseInt(value) < parseInt(state.filtro.costeMin) && value !== ''
-                            ? 'El coste máximo no puede ser inferior al mínimo'
+                            ? 'El coste máximo no puede ser inferior al mínimo' :
+                            parseInt(value) < 0 || parseInt(state.filtro.costeMin) < 0 ? 'El coste debe ser mayor o igual a 0' 
                             : ''
             } else if (name === 'puntosMin') {
                 error.puntos = state.filtro.puntosMax !== '' && parseInt(value) > parseInt(state.filtro.puntosMax) && value !== ''
-                            ? 'El mínimo de puntos no puede ser mayor al máximo'
+                            ? 'El mínimo de puntos no puede ser mayor al máximo' :
+                            parseInt(value) < 0 || parseInt(state.filtro.puntosMax) < 0 ? 'El número de puntos debe ser mayor o igual a 0' :
+                            parseInt(value) > 15 || parseInt(state.filtro.puntosMax) > 15 ? 'El número de puntos debe ser menor de 16'
                             : ''
             } else if (name === 'puntosMax') {
                 error.puntos = state.filtro.puntosMin !== '' && parseInt(value) < parseInt(state.filtro.puntosMin) && value !== ''
-                            ? 'El máximo de puntos no puede ser inferior al mínimo'
+                            ? 'El máximo de puntos no puede ser inferior al mínimo' :
+                            parseInt(value) < 0 || parseInt(state.filtro.puntosMin) < 0 ? 'El número de puntos debe ser mayor o igual a 0' :
+                            parseInt(value) > 15 || parseInt(state.filtro.puntosMin) > 15 ? 'El número de puntos debe ser menor de 16'
                             : ''
             } else if (name === 'horaMin') {
                 const tiempoMin = new Date(`1970-01-01T${value}Z`);

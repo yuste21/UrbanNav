@@ -1,6 +1,6 @@
 import { useState } from "react";
 import NavbarPage from "../navbar/navbar";
-import { Card, Collapse, Container, Button, Col, Row, Offcanvas, OverlayTrigger, Accordion, AccordionBody } from "react-bootstrap";
+import { Card, Container, Button, Col, Row, Offcanvas, OverlayTrigger, Accordion, AccordionBody } from "react-bootstrap";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import { center, zoom } from "../MapFunctions";
 import Modal from '../modal/Modal.js'
@@ -64,86 +64,129 @@ const CompInicio = () => {
         <>
             <NavbarPage></NavbarPage>
             <Container>
-                <h1>Bienvenido a UrbanNav Madrid</h1>
+                <h1 className="my-5">Bienvenido a UrbanNav Madrid</h1>
                 <Row className="my-4">
                     <Col xl={4} md={12}>
-                    <Card className="card-hover m-3">
-                        <Card.Body>
-                            <Card.Title>UrbanNav Madrid te ofrece una visión completa de la movilidad urbana</Card.Title>
-                            <Card.Text>
-                                <p>Características principales</p>
-                                <ul>
-                                    <li>
-                                        <button className="btn"
-                                                onClick={() => {
-                                                    if (elements[0]) {
-                                                        setElements(initialElements)
-                                                    } else {
-                                                        setElements([true, false, false, false, false]);
-                                                    }
-                                                }}
-                                        >
-                                            Mapas interactivos
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button className="btn"
-                                                onClick={() => {
-                                                    if (elements[1]) {
-                                                        setElements(initialElements)
-                                                    } else {
-                                                        setElements([false, true, false, false, false]);
-                                                    }
-                                                }}
-                                        >
-                                            Filtros avanzados
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button className="btn"
-                                                onClick={() => {
-                                                    if (elements[2]) {
-                                                        setElements(initialElements)
-                                                    } else {
-                                                        setElements([false, false, true, false, false]);
-                                                    }
-                                                }}
-                                        >
-                                            Gráficas informativas
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button className="btn"
-                                                onClick={() => {
-                                                    if (elements[3]) {
-                                                        setElements(initialElements)
-                                                    } else {
-                                                        setElements([false, false, false, true, false]);
-                                                    }
-                                                }}
-                                        >
-                                            Información detallada
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button className="btn"
-                                                onClick={() => {
-                                                    if (elements[4]) {
-                                                        setElements(initialElements)
-                                                    } else {
-                                                        setElements([false, false, false, false, true]);
-                                                    }
-                                                }}
-                                        >
-                                            Tablas con ordenación de datos
-                                        </button>
-                                    </li>
-                                </ul>
-                            </Card.Text>
-                        </Card.Body>
-                    </Card>
+                        <Card className="card-hover m-3">
+                            <Card.Body>
+                                <Card.Title>UrbanNav Madrid te ofrece una visión completa de la movilidad urbana</Card.Title>
+                                <Card.Text>
+                                    <button className="btn"
+                                            onClick={() => {
+                                                if (elements[0]) {
+                                                    setElements(initialElements)
+                                                } else {
+                                                    setElements([true, false, false, false, false]);
+                                                }
+                                            }}
+                                    >
+                                        <div className="section_our_solution">
+                                            <div className="or_solution_category">
+                                                <div className="solution_cards_box">
+                                                    <div className="solution_card">
+                                                        <div className="hover_color_buble"></div>
+                                                        <div className="solu_title">
+                                                            <p>Mapas interactivos</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                    <button className="btn"
+                                            onClick={() => {
+                                                if (elements[1]) {
+                                                    setElements(initialElements)
+                                                } else {
+                                                    setElements([false, true, false, false, false]);
+                                                }
+                                            }}
+                                    >
+                                        <div className="section_our_solution">
+                                            <div className="or_solution_category">
+                                                <div className="solution_cards_box">
+                                                    <div className="solution_card">
+                                                        <div className="hover_color_buble"></div>
+                                                        <div className="solu_title">
+                                                            <p>Filtros avanzados</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                    <button className="btn"
+                                            onClick={() => {
+                                                if (elements[2]) {
+                                                    setElements(initialElements)
+                                                } else {
+                                                    setElements([false, false, true, false, false]);
+                                                }
+                                            }}
+                                    >
+                                        <div className="section_our_solution">
+                                            <div className="or_solution_category">
+                                                <div className="solution_cards_box">
+                                                    <div className="solution_card">
+                                                        <div className="hover_color_buble"></div>
+                                                        <div className="solu_title">
+                                                            <p>Gráficas informativas</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                    <button className="btn"
+                                            onClick={() => {
+                                                if (elements[3]) {
+                                                    setElements(initialElements)
+                                                } else {
+                                                    setElements([false, false, false, true, false]);
+                                                    openModal(1)
+                                                }
+                                            }}
+                                    >
+                                        <div className="section_our_solution">
+                                            <div className="or_solution_category">
+                                                <div className="solution_cards_box">
+                                                    <div className="solution_card">
+                                                        <div className="hover_color_buble"></div>
+                                                        <div className="solu_title">
+                                                            <p>Información detallada</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                    <button className="btn"
+                                            onClick={() => {
+                                                if (elements[4]) {
+                                                    setElements(initialElements)
+                                                } else {
+                                                    setElements([false, false, false, false, true]);
+                                                }
+                                            }}
+                                    >
+                                        <div className="section_our_solution">
+                                            <div className="or_solution_category">
+                                                <div className="solution_cards_box">
+                                                    <div className="solution_card">
+                                                        <div className="hover_color_buble"></div>
+                                                        <div className="solu_title">
+                                                            <p>Tablas con ordenación de datos</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </Card.Text>
+                            </Card.Body>
+                        </Card>
                     </Col>
-                    {elements !== initialElements &&
+                    {(elements[0] || elements[2] || elements[4]) &&
                         <Col xs={8}>
                             {elements[0] ?
                             <div className="card m-3">
@@ -173,50 +216,53 @@ const CompInicio = () => {
                                     </MapContainer>
                                 </div>
                             </div>
-                            : elements[1] ?
+                            : elements[2] ?
+                                <Charts data={distritos}
+                                        setSelectedBar={setSelectedBar}
+                                        activatedOverlay={'Distrito'}
+                                        tipo={'trafico'}
+                                />
+                            : elements[4] ?
                                 <>
                                     <h2>Multas de tráfico</h2>
                                     <DynamicTable data={dataTable()}
                                                 columns={dataColumns()}
                                     />
                                 </>
-                            : elements[2] ?
-                                <Offcanvas show={elements[2]} onHide={handleClose} style={{ width: '650px' }} className="custom-offcanvas canvas">
-                                    <Offcanvas.Body>
-                                        <FormMultas handleFilter={handleFilter}
-                                                    handleClose={handleClose}
-                                        />
-                                    </Offcanvas.Body>
-                                </Offcanvas>
-                            : elements[3] ?
-                                <Modal isOpen={isOpenModal} 
-                                    closeModal={closeModal} 
-                                    info={{ data: 'Accidente Marker', tipo: 'accidente', idx: 1}}
-                                >
-                                    <p style={{fontWeight: 'bold'}}>
-                                        Fecha: {accidentes[0].fecha} <br/>
-                                        Hora: {accidentes[0].hora} <br/>
-                                        Clima: {accidentes[0].clima.clima} <br/>
-                                        Edad: {accidentes[0].edad} <br/>
-                                        Positivo en drogas: {accidentes[0].drogas ? 'Si' : 'No'} <br/>
-                                        Positivo en alcohol: {accidentes[0].alcohol ? 'Si' : 'No'} <br/>
-                                        Lesion: {[1, 2, 5, 6, 7].includes(accidentes[0].lesividadeCodigo) ? 'Leve' : 
-                                                accidentes[0].lesividadeCodigo === 3 ? 'Grave' : accidentes[0].lesividadeCodigo === 4 ? 'Fallecido' : 
-                                                accidentes[0].lesividadeCodigo === 14 ? 'Sin asistencia sanitaria' : 'Desconocido'} <br/>
-                                        Sexo: {accidentes[0].sexo.sexo} <br/>
-                                        {/* Tipo de accidente: {accidentes[0].tipo_accidente[0].tipo_accidente[0]} <br/> */}
-                                        Vehiculo: {accidentes[0].tipo_vehiculo.tipo_vehiculo} <br/>
-                                    </p>
-                                </Modal>
-                            : elements[4] ?
-                                <Charts data={distritos}
-                                        setSelectedBar={setSelectedBar}
-                                        activatedOverlay={'Distrito'}
-                                        tipo={'trafico'}
-                                />
                             : <></>
                             }
                         </Col>
+                    }
+                    {elements[1] &&
+                        <Offcanvas show={elements[1]} onHide={handleClose} style={{ width: '650px' }} className="custom-offcanvas canvas">
+                            <Offcanvas.Body>
+                                <FormMultas handleFilter={handleFilter}
+                                            handleClose={handleClose}
+                                />
+                            </Offcanvas.Body>
+                        </Offcanvas>
+                    }
+
+                    {elements[3] &&
+                        <Modal isOpen={isOpenModal} 
+                            closeModal={closeModal} 
+                            info={{ data: 'Accidente Marker', tipo: 'accidente', idx: 1}}
+                        >
+                            <p style={{fontWeight: 'bold'}}>
+                                Fecha: {accidentes[0].fecha} <br/>
+                                Hora: {accidentes[0].hora} <br/>
+                                Clima: {accidentes[0].clima.clima} <br/>
+                                Edad: {accidentes[0].edad} <br/>
+                                Positivo en drogas: {accidentes[0].drogas ? 'Si' : 'No'} <br/>
+                                Positivo en alcohol: {accidentes[0].alcohol ? 'Si' : 'No'} <br/>
+                                Lesion: {[1, 2, 5, 6, 7].includes(accidentes[0].lesividadeCodigo) ? 'Leve' : 
+                                        accidentes[0].lesividadeCodigo === 3 ? 'Grave' : accidentes[0].lesividadeCodigo === 4 ? 'Fallecido' : 
+                                        accidentes[0].lesividadeCodigo === 14 ? 'Sin asistencia sanitaria' : 'Desconocido'} <br/>
+                                Sexo: {accidentes[0].sexo.sexo} <br/>
+                                {/* Tipo de accidente: {accidentes[0].tipo_accidente[0].tipo_accidente[0]} <br/> */}
+                                Vehiculo: {accidentes[0].tipo_vehiculo.tipo_vehiculo} <br/>
+                            </p>
+                        </Modal>
                     }
 
                     {/* ACCIDENTES */}

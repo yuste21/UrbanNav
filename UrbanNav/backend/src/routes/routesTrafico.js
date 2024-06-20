@@ -4,6 +4,7 @@ import { leerCSV, getOrientacion,
 
         //Filtro Chart
         getChartFechaEstacion, getChartHoraEstacion, getChartFechaDistrito, getChartHoraDistrito,
+        getChartFechaBarrio, getChartHoraBarrio
 
 
 } from "../controllers/TraficoController.js";
@@ -22,5 +23,7 @@ routerTrafico.get('/chart/fecha/estacion', getChartFechaEstacion)
 routerTrafico.get('/chart/hora/estacion', getChartHoraEstacion)
 routerTrafico.get('/chart/fecha/distrito', getChartFechaDistrito)
 routerTrafico.get('/chart/hora/distrito', getChartHoraDistrito)
+routerTrafico.get('/chart/fecha/barrio', getChartFechaBarrio)
+routerTrafico.get('/chart/hora/barrio', getChartHoraBarrio)
 
 export default routerTrafico

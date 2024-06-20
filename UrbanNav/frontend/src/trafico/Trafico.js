@@ -48,10 +48,17 @@ function Trafico () {
         cargaInicial()
     }, [])
 
-    const handleFilter = async () => {
-        if (filtro !== initialFilter) {
-            if (filtro.getAll === true) {
-                dispatch(getAllDataTrafico)
+    const handleFilter = async (getAll) => {
+        console.log(getAll)
+        if (filtro !== initialFilter || getAll) {
+            if (filtro.getAll === true || getAll) {
+                const confirmacion = window.confirm('¿Esta búsqueda puede tardar un tiempo, quieres continuar?');
+        
+                if (confirmacion) {
+                    dispatch(getAllDataTrafico());
+                } else {
+                    return;
+                }
             } else {
                 const [year, month] = filtro.mes.split('-')
                 var numeroMonth = parseInt(month, 10)

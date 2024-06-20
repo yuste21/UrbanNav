@@ -615,7 +615,7 @@ export async function estacionamientosAux(estacionamientosReq) {
         try {
             const estacionamientosId = estacionamientosReq.map(el => el.id)
 
-            const distritos = await DistritoModel.findAll({
+            const distritosBD = await DistritoModel.findAll({
                 include: [{
                     model: BarrioModel,
                     as: 'barrios',
@@ -643,12 +643,23 @@ export async function estacionamientosAux(estacionamientosReq) {
                 }]
             })
     
+            var distritos = []
             var estacionamientos = []
             var barrios = []
-            distritos.forEach((distrito) => {
+            distritosBD.forEach((distrito) => {
+                var n_estacionamientos = 0
                 barrios = barrios.concat(distrito.barrios)
                 distrito.barrios.forEach((barrio) => {
                     estacionamientos = estacionamientos.concat(barrio.estacionamientos)
+                    n_estacionamientos += barrio.estacionamientos.length
+                })
+                distritos.push({
+                    id: distrito.id,
+                    codigo: distrito.codigo,
+                    nombre: distrito.nombre,
+                    delimitaciones: distrito.delimitaciones,
+                    barrios: distrito.barrios,
+                    n_estacionamientos
                 })
             })
 

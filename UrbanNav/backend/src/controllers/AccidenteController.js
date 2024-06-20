@@ -832,8 +832,14 @@ export async function accidentesAux(accidentesId) {
                     ]
                   }]
                 }]
-              });
+            });
 
+            /**
+             * En el caso de que no todos los barrios tengan accidentes, estos no se pintarán en el mapa y no se tomarán
+             * en cuenta a la hora de hacer las medias. Por eso usamos la var barriosVacios
+             */
+            const barrios_bd = await BarrioModel.findAll()
+            var barriosVacios = []
 
             const PESOS = {
                 lesion: 0.4,
@@ -998,7 +1004,14 @@ export async function accidentesAux(accidentesId) {
             })
 
             riesgoDistrito = riesgoDistrito / distritos.length
-            riesgoBarrio = riesgoBarrio / barrios.length
+            //riesgoBarrio = riesgoBarrio / barrios.length
+            riesgoBarrio = riesgoBarrio / barrios_bd.length
+
+            console.log('Barrios antes = ' + barrios.length)
+            barriosVacios = barrios_bd.filter(el => !barrios.some(barrio => barrio.id === el.id))
+            console.log('Vacios = ' + barriosVacios.length)
+            barrios = barrios.concat(barriosVacios)
+            console.log('Barrios NUEVO = ' + barrios.length)
 
             resolve({ distritos, barrios, riesgoDistrito, riesgoBarrio, accidentes })
         } catch (error) {

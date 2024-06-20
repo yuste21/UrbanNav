@@ -138,11 +138,15 @@ export const dataAccidenteSlice = createSlice({
                         : ''
                 } else if (name === 'edad1') {
                     error.edad = state.filtro.edad2 !== '' && parseInt(value) > parseInt(state.filtro.edad2) && value !== ''
-                        ? 'La edad de inicio no puede ser posterior a la de fin'
+                        ? 'La edad de inicio no puede ser posterior a la de fin' :
+                        parseInt(value) < 0 || parseInt(state.filtro.edad2) < 0 ? 'La edad debe ser mayor de 0' :
+                        parseInt(value) >= 74 || parseInt(state.filtro.edad2) >= 74 ? 'La edad debe ser menor de 74'
                         : ''
                 } else if (name === 'edad2') {
                     error.edad = state.filtro.edad1 !== '' && parseInt(value) < parseInt(state.filtro.edad1) && value !== ''
-                        ? 'La edad de fin no puede ser anterior a la de inicio'
+                        ? 'La edad de fin no puede ser anterior a la de inicio' :
+                        parseInt(value) < 0 || parseInt(state.filtro.edad1) < 0 ? 'La edad debe ser mayor de 0' :
+                        parseInt(value) >= 74 || parseInt(state.filtro.edad1) >= 74 ? 'La edad debe ser menor de 74'
                         : ''
                 } else if (name === 'hora1') {
                     const tiempoMin = new Date(`1970-01-01T${value}Z`);
@@ -203,6 +207,7 @@ export const dataAccidenteSlice = createSlice({
             const nombre = action.payload.nombre
             var acc = []
             var activo
+            console.log('Tipo = ' + tipo)
             if(tipo === 'distrito') {
                 const distrito = action.payload.accidentes
                 
@@ -217,7 +222,7 @@ export const dataAccidenteSlice = createSlice({
                     state.filtro.filtrado = true
                 } else {
                     activo = false
-                    state.filtro.filtrado = false
+                    state.filtro.filtrado = true
                 }
                 acc = action.payload.accidentes
             }

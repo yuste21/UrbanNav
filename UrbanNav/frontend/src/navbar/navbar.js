@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Container, Form, Nav, Navbar, NavDropdown } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { handleCheck } from '../features/help/helpSlice';
 
 function NavbarPage() {
@@ -11,9 +11,17 @@ function NavbarPage() {
 
     // Función para verificar si la ruta es activa
     const isActive = (path) => location.pathname === path;
+    const navigate = useNavigate()
 
     return (
         <Navbar expand="md" className="navbar sticky-top">
+            {isActive('/flujo') &&
+                <button className="btn"
+                        onClick={() => navigate(-1)}
+                >
+                    <i class="bi bi-arrow-return-left"></i> Volver
+                </button>
+            }
             <Container>
                 <Navbar.Brand href="/" className={`link-custom ${isActive('/') ? 'active' : ''}`}>Inicio</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />

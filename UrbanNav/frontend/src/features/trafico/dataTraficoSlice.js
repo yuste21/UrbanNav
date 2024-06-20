@@ -26,7 +26,9 @@ const initialState = {
         estaciones: [],
         media: 0,
         fechaMin: '',
-        fechaMax: ''
+        fechaMax: '',
+        fechaInicioMin: '',
+        fechaInicioMax: ''
     },
     filtro: initialFilter,
     loading: false
@@ -152,6 +154,8 @@ export const dataTraficoSlice = createSlice({
 
             state.dataTrafico.fechaMin = action.payload.fechaMin
             state.dataTrafico.fechaMax = action.payload.fechaMax
+            state.dataTrafico.fechaInicioMin = action.payload.fechaInicioMin
+            state.dataTrafico.fechaInicioMax = action.payload.fechaInicioMax
             state.loading = false
         })
         .addCase(getDataTraficoInicio.rejected, (state, action) => {
@@ -166,7 +170,12 @@ export const dataTraficoSlice = createSlice({
             state.dataTrafico.barrios = action.payload.barrios
             state.dataTrafico.media = action.payload.media_total
             state.dataTrafico.estaciones = action.payload.estaciones_trafico
-            
+        
+            if (state.dataTrafico.fechaInicioMin !== '') {
+                state.dataTrafico.fechaInicioMin = ''
+                state.dataTrafico.fechaInicioMax = ''
+            }
+
             state.filtro.filtrado = true
             state.loading = false
         })

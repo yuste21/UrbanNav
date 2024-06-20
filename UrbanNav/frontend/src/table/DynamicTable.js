@@ -85,7 +85,7 @@ const DynamicTable = ({ data, columns }) => {
     return (
         <div>
             <Form.Group controlId="rowsPerPageSelect">
-                <Form.Label>Filas por página:</Form.Label>
+                <Form.Label>{data.length} filas | Filas por página:</Form.Label>
                 <Form.Control as="select" value={rowsPerPage} onChange={handleRowsPerPageChange}>
                     {[10, 20, 50, 100].map(size => (
                         <option key={size} value={size}>{size}</option>

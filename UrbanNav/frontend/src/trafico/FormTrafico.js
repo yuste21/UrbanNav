@@ -6,7 +6,8 @@ import {
     activarFiltro, 
     getAll, 
     vaciarFiltro, 
-    getDataTraficoInicio 
+    getDataTraficoInicio, 
+    getAllDataTrafico
 } from "../features/trafico/dataTraficoSlice"
 
 const FormTrafico = ({ handleFilter, handleClose }) => {
@@ -14,11 +15,11 @@ const FormTrafico = ({ handleFilter, handleClose }) => {
     const filtro = useSelector(state => state.trafico.filtro)
     const [validated, setValidated] = useState(false)
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e, getAll) => {
         e.preventDefault()
 
         if (!filtro.fecha1 && !filtro.fecha2 && !filtro.mes && !filtro.hora1 && !filtro.hora2 && 
-            !filtro.sentido && !filtro.getAll) {
+            !filtro.sentido && !filtro.getAll && !getAll) {
             alert('Datos incompletos')
             return
         } else if (filtro.error.fecha !== '' || filtro.error.hora !== '' || filtro.error.mes !== '') {
@@ -28,7 +29,7 @@ const FormTrafico = ({ handleFilter, handleClose }) => {
 
         setValidated(true)
         dispatch(activarFiltro())
-        handleFilter()
+        handleFilter(getAll)
     }
 
     const limpiarFiltro = () => {
@@ -54,7 +55,7 @@ const FormTrafico = ({ handleFilter, handleClose }) => {
                     </div>
                 </div>
                 <div className="card-body">
-                    <Form noValidate validated={validated} onSubmit={handleSubmit}>
+                    <Form noValidate validated={validated} onSubmit={(e) => handleSubmit(e, false)}>
                         <div className="row mb-2">
                             <Form.Group as={Col} className="d-flex flex-column align-items-start">
                                 <Form.Label className="fw-bold me-2" htmlFor="mes">Introduce un mes</Form.Label>
@@ -174,7 +175,7 @@ const FormTrafico = ({ handleFilter, handleClose }) => {
                                        type="button"
                                        onClick={(e) => {
                                             dispatch(getAll())
-                                            handleSubmit(e)
+                                            handleSubmit(e, true)
                                        }}
                                        value='Mostrar todo el trafico'
                                 />

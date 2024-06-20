@@ -24,6 +24,12 @@ const Flujo = () => {
     const [brush, setBrush] = useState(true)
     const loading = useSelector(state => state.flujo.loading)
 
+    useEffect(() => {
+        console.log('entidad = ' + JSON.stringify(entidad))
+        console.log('info = ' + info)
+        console.log('tipo = ' + tipo)
+    }, [])
+
     const [centro, setCentro] = useState()
     useEffect(() => {
         if (entidad !== null) {
@@ -44,7 +50,7 @@ const Flujo = () => {
     const [barrio, setBarrio] = useState()
     useEffect(() => {
         if(entidad !== null) {
-            if (tipo === 'estacion' || tipo === 'trafico distrito' || tipo === 'accidente distrito' || tipo === 'accidente barrio') {
+            if (tipo === 'estacion' || tipo.includes('trafico') || tipo === 'accidente distrito' || tipo === 'accidente barrio') {
                 setData(entidad.zonaPrincipal)
             } else if (tipo.split(' ')[0] === 'barrio') {   //tipo === 'barrio id'
                 var aux = entidad.subzonas.find(el => el.nombre === tipo.slice(17))
@@ -73,16 +79,16 @@ const Flujo = () => {
             :
                 <>
                     <div className="row">
-                        <div className="col">
+                        <div className="col d-flex align-items-center">
                             {tipo === 'estacion' ?
                                 <h3>Estacion: {entidad.codigo}</h3>
-                            : tipo === 'trafico distrito' || tipo === 'accidente distrito' || tipo.split(' ')[0] === 'estacion' || tipo.split(' ')[0] === 'barrio' ?
+                            : tipo.includes('distrito') || (tipo.split(' ')[0] === 'estacion' && !tipo.includes('barrio')) || tipo.split(' ')[0] === 'barrio' ?
                                 <h3>Distrito: {entidad.nombre}</h3>
                             :   <h3>Barrio: {entidad.nombre}</h3>
                             }
                         </div>
                         <div className="col">
-                            <h3>Desde {filtro[`${info}1`]} hasta {tipo.includes('accidente') ? filtro[`${info}2`] : `${filtro[`${info}2`].split(':')[0]}:59`}</h3>
+                            <h3>Desde {filtro[`${info}1`]} hasta {(tipo.includes('trafico') || tipo.includes('estacion')) && info === 'hora' ? `${filtro[`${info}2`].split(':')[0]}:59` : filtro[`${info}2`]} </h3>
                         </div>
                     </div>
                     <div className="row">
@@ -92,12 +98,7 @@ const Flujo = () => {
                                     width={800} 
                                     height={500} 
                                     data={data}
-                                    margin={{
-                                        top: 5,
-                                        right: 100,
-                                        left: 100,
-                                        bottom: 5
-                                    }}
+                                    
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
                                     {/*<XAxis dataKey="name" scale="band" />*/}
@@ -147,13 +148,14 @@ const Flujo = () => {
                                                     <h3>
                                                         Flujo de trafico de {tipo === 'estacion' ? `Estación ${entidad.nombre}`  : 
                                                                             tipo === 'trafico distrito' ? `Distrito ${entidad.nombre}` : 
+                                                                            tipo === 'trafico barrio' ? `Barrio ${entidad.nombre}` :
                                                                             `Estación ${estacion.nombre}`} 
                                                     </h3>
-                                                    {tipo !== 'trafico distrito' && tipo !== 'estacion' && tipo.split(' ')[0] === 'estacion' &&
+                                                    {!tipo.includes('trafico') && tipo !== 'estacion' && tipo.split(' ')[0] === 'estacion' &&
                                                         <button className="btn btn-primary"
-                                                                onClick={() => setTipo('trafico distrito')}
+                                                                onClick={() => setTipo(`${tipo.includes('barrio') ? 'trafico barrio' : 'trafico distrito'}`)}
                                                         >
-                                                            Mostrar trafico de todo el distrito
+                                                            Mostrar trafico de todo el {tipo.includes('distrito') ? 'distrito' : 'barrio'}
                                                         </button>
                                                     }
                                                 </div>
@@ -229,7 +231,7 @@ const Flujo = () => {
 
                                                         </Polygon>
                                                     ))
-                                                    : tipo === 'trafico distrito' || (tipo.split(' ')[0] === 'estacion' && tipo.split(' ').length > 1) ?
+                                                    : tipo.includes('trafico') || (tipo.split(' ')[0] === 'estacion' && tipo.split(' ').length > 1) ?
                                                     entidad.subzonas.map((aforo) => (
                                                         <Marker key={aforo.estacion}
                                                                 position={[aforo.lat, aforo.lon]}
@@ -237,7 +239,7 @@ const Flujo = () => {
                                                                 eventHandlers={{
                                                                     click: () => {
                                                                         setEstacion(aforo)
-                                                                        setTipo(`estacion ${aforo.estacion}`)
+                                                                        setTipo(`estacion ${aforo.estacion} ${tipo.includes('barrio') ? 'barrio' : 'distrito'}`)
                                                                     }
                                                                 }}
                                                         >

@@ -676,9 +676,207 @@ export const getChartHoraDistrito = async(req, res) => {
     }
 }
 
+export const getChartFechaBarrio = async (req, res) => {
+    try {
+        const { fecha1, fecha2, id } = req.query
+
+        console.log('Llega al controler: fecha1 | fecha2 | id = ' + fecha1 + ' | ' + fecha2 + ' | ' + id)
+
+        var fechaInicio
+        var fechaFin
+
+        if(fecha1 <= fecha2) {
+            fechaInicio = moment(fecha1, 'YYYY-MM-DD')
+            fechaFin = moment(fecha2, 'YYYY-MM-DD')
+        } else {
+            fechaInicio = moment(fecha2, 'YYYY-MM-DD')
+            fechaFin = moment(fecha1, 'YYYY-MM-DD')
+        }
+
+        const barrioBD = await BarrioModel.findByPk(id, {
+            include: [
+                {
+                    model: TraficoModel,
+                    as: 'aforos',
+                    where: {
+                        fecha: {
+                            [Op.between]: [fechaInicio, fechaFin]
+                        }
+                    }
+                }
+            ]
+        })
+
+        var aforos = []
+        barrioBD.aforos.forEach((estacion) => {
+            var encontrado = aforos.find(aforo => aforo.estacion === estacion.estacion)
+            var aforo = estacion.trafico.reduce((total, traficoActual) => total + traficoActual, 0)
+            if(encontrado) {
+                var encontrado2 = encontrado.trafico.find(el => el.fecha === estacion.fecha)
+                if(encontrado2) {
+                    encontrado2.aforo += aforo
+                } else {
+                    encontrado.trafico.push({
+                        aforo: aforo,
+                        fecha: estacion.fecha
+                    })
+                }
+            } else {
+                var trafico = []
+                trafico.push({
+                    aforo: aforo,
+                    fecha: estacion.fecha
+                })
+                aforos.push({
+                    estacion: estacion.estacion,
+                    lat: estacion.lat,
+                    lon: estacion.lon,
+                    nombre: estacion.nombre,
+                    trafico: trafico
+                })
+            }
+        })
+
+        var barrio = []
+        var diferenciaDias = fechaFin.diff(fechaInicio, 'days')
+        var fechaActual = moment(fechaInicio, 'YYYY-MM-DD')
+        for(let i = 0; i < (diferenciaDias + 1); i++) {
+            var fechaActual = moment(fechaInicio, 'YYYY-MM-DD')
+            fechaActual.add(i, 'days')
+            var aforoBarrio = 0
+            aforos.forEach((estacion) => {
+                var encontrado = estacion.trafico.find(el => fechaActual.isSame(el.fecha, 'day'))
+                if(encontrado) {
+                    aforoBarrio += encontrado.aforo
+                }
+            })
+            
+            barrio.push({
+                fecha: fechaActual.format('YYYY-MM-DD'),
+                aforo: aforoBarrio
+            })
+        }
+
+        var centro = calcularPuntoMedio(barrioBD.delimitaciones)
+        res.json({ trafico: barrio, aforos, nombre: barrioBD.nombre, codigo: barrioBD.id, delimitaciones: barrioBD.delimitaciones, centro })
+
+    } catch (error) {
+        console.log('Error en la consulta getChartFechaBarrio', error.message)
+        res.status(500).json({ error: 'Error en la consulta getChartFechaBarrio'})
+    }
+}
+
+export const getChartHoraBarrio = async (req, res) => {
+    try {
+        const { hora1, hora2, id } = req.query
+
+        var min = hora1
+        var max = hora2
+
+        min = min.split(':')
+        max = max.split(':')
+
+        var horaMin = new Date()
+        horaMin.setHours(parseInt(min[0]), parseInt(min[1]), 0)
+
+        var horaMax = new Date()
+        horaMax.setHours(parseInt(max[0]), parseInt(max[1]), 0)
+
+        const barrioBD = await BarrioModel.findByPk(id, {
+            include: [
+                {
+                    model: TraficoModel,
+                    as: 'aforos'
+                }
+            ]
+        })
+
+        horaMin = horaMin.getHours()
+        horaMax = horaMax.getHours()
+        var aforos = []
+        barrioBD.aforos.forEach((estacion) => {
+            var encontrado = aforos.find(el => el.estacion === estacion.estacion)
+            if (!encontrado) {
+                encontrado = {
+                    estacion: estacion.estacion,
+                    lat: estacion.lat,
+                    lon: estacion.lon,
+                    nombre: estacion.nombre,
+                    trafico: []
+                };
+                aforos.push(encontrado);
+            }
+            for(let i = 0; i < estacion.trafico.length; i++) {
+                if((horaMin < horaMax && horaMin <= (i+1) && (i+1) <= horaMax) || (horaMax < horaMin && (horaMin <= (i+1) || (i+1) <= horaMax))) {
+                    var hora = (i + 1) < 10 ? `0${i+1}:00` : `${i+1}:00`
+                    var encontrado2 = encontrado.trafico.find(el => el.hora === hora)
+                    if(encontrado2) {
+                        encontrado2.aforo += estacion.trafico[i]
+                    } else {
+                        encontrado.trafico.push({
+                            aforo: estacion.trafico[i],
+                            hora: hora
+                        })
+                    }          
+                }
+            }
+        })
+
+        var barrio = []
+        horaMax = (horaMax+1) % 25 === 0 ? 1 : (horaMax+1)
+        for(let horaActual = horaMin; horaActual !== horaMax; horaActual++) {
+            horaActual = horaActual % 25
+            horaActual = horaActual === 0 ? 1 : horaActual
+            var horaString = horaActual < 10 ? `0${horaActual}:00` : `${horaActual}:00`
+            var aforoBarrio = 0
+            aforos.forEach((estacion) => {
+                var encontrado = estacion.trafico.find(el => el.hora === horaString)
+                if(encontrado) {
+                    aforoBarrio += encontrado.aforo
+                }
+            })
+
+            barrio.push({
+                hora: horaString,
+                aforo: aforoBarrio
+            })
+        }
+
+        //Ordeno el trafico de cada estacion
+        if(horaMin < 10) {
+            horaMin = `0${horaMin}:00`
+        } else {
+            horaMin = `${horaMin}:00`
+        }
+        var aforos_ordenado = []
+        aforos.forEach((estacion) => {
+            var trafico_ordenado = []
+            
+            var idx = estacion.trafico.findIndex((el) => el.hora === horaMin)
+            for(let i = 0; i < estacion.trafico.length; i++) {
+                trafico_ordenado[i] = estacion.trafico[idx]
+                idx = (idx + 1) % estacion.trafico.length
+            }
+            aforos_ordenado.push({
+                estacion: estacion.estacion,
+                lat: estacion.lat,
+                lon: estacion.lon,
+                nombre: estacion.nombre,
+                trafico: trafico_ordenado,
+            })
+        })
+
+        var centro = calcularPuntoMedio(barrioBD.delimitaciones)
+        res.json({ trafico: barrio, aforos: aforos_ordenado, nombre: barrioBD.nombre, codigo: barrioBD.id, delimitaciones: barrioBD.delimitaciones, centro })
+    } catch (error) {
+        console.log('Error en la consulta getChartHoraBarrio', error.message)
+        res.status(500).json({ error: 'Error en la consulta getChartHoraBarrio'})
+    }
+}
+
 export const filtro = async (req, res) => {
     try {
-        const { orientacion, month, year, sentido, hora1, hora2, fecha1, fecha2 } = req.query
+        const { month, year, sentido, hora1, hora2, fecha1, fecha2 } = req.query
 
         let whereConditions = {}
 
@@ -708,26 +906,46 @@ export const filtro = async (req, res) => {
             }
         }
 
+        var orientacion
         if (sentido !== '') {
             whereConditions['$orientacione.orientacion$'] = sentido
+            orientacion = 'true'
+        } else {
+            orientacion = 'false'
         }
 
+        // if (hora1 !== '' && hora2 !== '') {
+        //     if (hora1 === hora2) {
+        //         whereConditions.hora = hora1
+        //     } else {
+        //         whereConditions.hora = {
+        //             [Op.between]: [hora1, hora2]
+        //         }
+        //     }
+        // } else if (hora1 !== '') {
+        //     whereConditions.hora = {
+        //         [Op.gte]: hora1
+        //     }
+        // } else if (hora2 !== '') {
+        //     whereConditions.hora = {
+        //         [Op.lte]: hora2
+        //     }
+        // }
+
+        let horaMin, horaMax
         if (hora1 !== '' && hora2 !== '') {
-            if (hora1 === hora2) {
-                whereConditions.hora = hora1
+            if (hora1 < horaMax) {
+            horaMin = hora1
+            horaMax = hora2
+            console.log('1 | horaMin = ' + horaMin + ' | horaMax = ' + horaMax)
             } else {
-                whereConditions.hora = {
-                    [Op.between]: [hora1, hora2]
-                }
+                horaMin = hora2
+                horaMax = hora1
+                console.log('2 | horaMin = ' + horaMin + ' | horaMax = ' + horaMax)
             }
-        } else if (hora1 !== '') {
-            whereConditions.hora = {
-                [Op.gte]: hora1
-            }
-        } else if (hora2 !== '') {
-            whereConditions.hora = {
-                [Op.lte]: hora2
-            }
+        } else {
+            horaMin = null
+            horaMax = null
         }
 
         const trafico = await TraficoModel.findAll({
@@ -740,6 +958,8 @@ export const filtro = async (req, res) => {
 
         const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, orientacion, horaMin, horaMax)
         
+        console.log('Orientacion = ' + sentido)
+
         res.json({ distritos, barrios, estaciones_trafico, media_total })
     } catch (error) {
         console.log('Error en la consulta filtro', error.message)

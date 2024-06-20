@@ -14,7 +14,11 @@ const fillBlueOptions = { fillColor: 'blue' }
 const MapAccidentes = ({handleFilter,
                         obtenerDatosGrafica,
                         zonaSeleccionada,
-                        setZonaSeleccionada
+                        setZonaSeleccionada,
+                        agrupacion,
+                        agrupacionPie,
+                        zonaClickeada,
+                        setZonaClickeada
                     }) => {
 
     const accidentes = useSelector(state => state.accidentes.dataAccidentes.accidentes)
@@ -56,7 +60,7 @@ const MapAccidentes = ({handleFilter,
                 } else if (key === 'zonas' && filtro[key].activo === true) {
                     clave = `${filtro[key].tipo} `
                     valor = `${filtro[key].nombre}`
-                } else if (key !== 'zonas') {
+                } else if (key !== 'zonas' && key !== 'radio') {
                     clave = key + ': '
                     valor = filtro[key] + ''
                 } else {
@@ -136,7 +140,7 @@ const MapAccidentes = ({handleFilter,
     const [accidentesPrev, setAccidentesPrev] = useState([])
 
     //ZONA SELECCIONADA (INFO EN LA LEYENDA)
-    const [zonaClickeada, setZonaClickeada] = useState(false)
+    
     const [eventZonaPrevia, setEventZonaPrevia] = useState(null)
 
     const handleClick = (event, zona, riesgo) => {
@@ -144,28 +148,25 @@ const MapAccidentes = ({handleFilter,
         if(eventZonaPrevia !== null) {
             eventZonaPrevia.event.target.setStyle({ fillColor: eventZonaPrevia.color })
         }
-
-        console.log('Zona.id = ' + zona.id)
-        console.log('ZonaSeleccionada.id = ' + zonaSeleccionada.id)
-
-        if (zona.id === zonaSeleccionada.id && zonaClickeada) {
+        
+        if (zonaSeleccionada !== null && zona.id === zonaSeleccionada.id && zonaClickeada) {
             setZonaClickeada(false)
             setZonaSeleccionada(null)
 
             setEventZonaPrevia(null)
 
-            obtenerDatosGrafica('clima.clima', 'Bar')
-            obtenerDatosGrafica('tipo_accidente.tipo_accidente', 'Pie')
+            obtenerDatosGrafica(agrupacion, 'Bar', null)
+            obtenerDatosGrafica(agrupacionPie, 'Pie', null)
         } else {
             setZonaClickeada(true)
-            const fillColor = zona.riesgo < (riesgo - riesgo*0.5) ? ' #2A81CB' : zona.riesgo < riesgo ? '#FFD326' : zona.riesgo < (riesgo + riesgo*0.5) ? '#CB8427' : '#CB2B3E'
+            const fillColor = zona.riesgo < (riesgo - riesgo*0.5) || riesgo === 0 || !zona.n_accidentes ? ' #2A81CB' : zona.riesgo < riesgo ? '#FFD326' : zona.riesgo < (riesgo + riesgo*0.5) ? '#CB8427' : '#CB2B3E'
             event.target.setStyle({ fillColor: 'rgba(4, 4, 252, 0)' })
 
             setEventZonaPrevia({ event: event, color: fillColor })
             setZonaSeleccionada(zona)
 
-            obtenerDatosGrafica('clima.clima', 'DeseleccionadoBar')
-            obtenerDatosGrafica('tipo_accidente.tipo_accidente', 'DeseleccionadoPie')
+            obtenerDatosGrafica(agrupacion, 'Bar', zona)
+            obtenerDatosGrafica(agrupacionPie, 'Pie', zona)
 
         }
 
@@ -173,7 +174,7 @@ const MapAccidentes = ({handleFilter,
 
     const handleMouseOut = (event, zona, riesgo) => {
         if(!zonaClickeada) {
-            const fillColor = zona.riesgo < (riesgo - riesgo*0.5) ? ' #2A81CB' : zona.riesgo < riesgo ? '#FFD326' : zona.riesgo < (riesgo + riesgo*0.5) ? '#CB8427' : '#CB2B3E'
+            const fillColor = zona.riesgo < (riesgo - riesgo*0.5) || riesgo === 0 || !zona.n_accidentes ? ' #2A81CB' : zona.riesgo < riesgo ? '#FFD326' : zona.riesgo < (riesgo + riesgo*0.5) ? '#CB8427' : '#CB2B3E'
             event.target.setStyle({ fillColor: fillColor });
             setZonaSeleccionada(null)
         }
@@ -300,16 +301,16 @@ const MapAccidentes = ({handleFilter,
                                                 click: (event) => handleClick(event, distrito, riesgoDistrito)
                                             }}
                                             pathOptions={{
-                                                color: distrito.riesgo < (riesgoDistrito - riesgoDistrito*0.5) ? '#2A81CB' : 
-                                                    distrito.riesgo < riesgoDistrito ? '#FFD326' : 
-                                                    distrito.riesgo < (riesgoDistrito + riesgoDistrito*0.5) ? '#CB8427' : 
-                                                    '#CB2B3E' 
+                                                color: distrito.riesgo < (riesgoDistrito - riesgoDistrito*0.5) || distrito.riesgo === 0 ? '#2A81CB' : 
+                                                       distrito.riesgo < riesgoDistrito ? '#FFD326' : 
+                                                       distrito.riesgo < (riesgoDistrito + riesgoDistrito*0.5) ? '#CB8427' : 
+                                                       '#CB2B3E' 
                                             }}
                                             positions={distrito.delimitaciones}
                                     >
                                         <Popup>
                                             {distrito.n_accidentes < 100 &&
-                                                <button className='btn'
+                                                <button className='btn btn-hover'
                                                         onClick={() => {
                                                             setAccidentesPrev(accidentes)
                                                             setZonaClickeada(null)
@@ -320,7 +321,7 @@ const MapAccidentes = ({handleFilter,
                                                 </button>
                                             }
                                             <button onClick={() => openModal(distrito.id)}
-                                                    className='btn'
+                                                    className='btn btn-hover'
                                             >
                                                 Ver más información
                                             </button>
@@ -346,7 +347,7 @@ const MapAccidentes = ({handleFilter,
                                                 click: (event) => handleClick(event, barrio, riesgoBarrio)
                                             }}
                                             pathOptions={{
-                                                color: barrio.riesgo < (riesgoBarrio - riesgoBarrio*0.5) ? ' #2A81CB' : 
+                                                color: barrio.riesgo < (riesgoBarrio - riesgoBarrio*0.5) || !barrio.n_accidentes ? '#2A81CB' : 
                                                     barrio.riesgo < riesgoBarrio ? '#FFD326' : 
                                                     barrio.riesgo < (riesgoBarrio + riesgoBarrio*0.5) ? '#CB8427' : 
                                                     '#CB2B3E' 
@@ -354,7 +355,7 @@ const MapAccidentes = ({handleFilter,
                                             positions={barrio.delimitaciones}
                                     >
                                         <Popup>
-                                            {barrio.accidentes.length < 100 &&
+                                            {barrio.accidentes && barrio.accidentes.length < 100 &&
                                                 <button className='btn'
                                                         onClick={() => {
                                                             setAccidentesPrev(accidentes)
@@ -366,7 +367,7 @@ const MapAccidentes = ({handleFilter,
                                                 </button>
                                             }
                                             <button onClick={() => openModal(barrio.id)}
-                                                    className='btn'
+                                                    className='btn btn-hover'
                                             >
                                                 Ver más información
                                             </button>
@@ -376,9 +377,13 @@ const MapAccidentes = ({handleFilter,
                                             >
                                                 <p style={{ fontWeight: 'bold' }}>
                                                     Nombre: {barrio.nombre} <br/>
-                                                    Lesividad media: {barrio.lesividad_media} <br/>
-                                                    Riesgo: {barrio.riesgo} <br/>
-                                                    {barrio.n_accidentes} accidentes
+                                                    {barrio.lesividad_media &&
+                                                    <>
+                                                        Lesividad media: {barrio.lesividad_media} <br/>
+                                                        Riesgo: {barrio.riesgo} <br/>
+                                                        {barrio.n_accidentes} accidentes
+                                                    </>
+                                                    }
                                                 </p>
                                             </Modal>
                                         </Popup>
@@ -390,7 +395,7 @@ const MapAccidentes = ({handleFilter,
                                         <Marker key={index} position={[accidente.lat, accidente.lon]}>
                                             <Popup>
                                                 <button onClick={() => openModal(index)}
-                                                        className='btn'
+                                                        className='btn btn-hover'
                                                 >
                                                     Ver más información
                                                 </button>

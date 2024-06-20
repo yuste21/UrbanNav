@@ -59,6 +59,14 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
         return contador
     }
 
+    //Centramos la vista del mapa al radar seleccionado
+    useEffect(() => {
+        console.log('Map.setview')
+        if (selectedRadar !== null && map) {
+            map.setView([selectedRadar.radar.lat, selectedRadar.radar.lon], map.getZoom());
+        }
+    }, [selectedRadar, map]);
+
     return(
         <>
             <div className="card m-3">
@@ -103,7 +111,7 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
                                   zoom={zoom} 
                                   style={{ height: '400px', width: '100%', borderRadius: '10px' }} 
                                   className="shadow"
-                                  ref={setMap}
+                                  whenCreated={setMap}
                     >
                         <TileLayer
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -115,7 +123,7 @@ function MapRadares ({ distritos, barrios, selectedRadar, setSelectedRadar, show
                             >   
                                 <Popup>
                                     {distrito.barrios.find(barrio => barrio.radares.length > 0) &&
-                                        <button className="btn"
+                                        <button className="btn btn-hover"
                                                 onClick={() => {
                                                     setSelectedRadar(null)
                                                     setRadaresPrev(radares)

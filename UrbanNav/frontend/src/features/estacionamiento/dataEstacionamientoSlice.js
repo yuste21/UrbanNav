@@ -53,12 +53,18 @@ export const estacionamientoSlice = createSlice({
             let error = { ...state.filtro.error }
             if (name === 'plazas1') {
                 error.plazas = state.filtro.plazas2 !== '' && parseInt(value) > parseInt(state.filtro.plazas2) && value !== ''
-                                ? 'El mínimo de plazas no puede ser mayor al máximo'
+                                ? 'El mínimo de plazas no puede ser mayor al máximo' :
+                                parseInt(state.filtro.plazas2) < 0 || parseInt(value) < 0 ?
+                                'El número de plazas debe ser mayor de 0' :
+                                parseInt(state.filtro.plazas2) > 200 || parseInt(value) > 200 ?
+                                'El número de plazas debe ser menor de 200'
                                 : ''
             } else if (name === 'plazas2') {
                 error.plazas = state.filtro.plazas1 !== '' && parseInt(value) < parseInt(state.filtro.plazas1) && value !== ''
-                ? 'El máximo de plazas no puede ser menor al mínimo'
-                : ''
+                                ? 'El máximo de plazas no puede ser menor al mínimo' :
+                                parseInt(value) < 0 || parseInt(state.filtro.plazas1) < 0 ? 'El número de plazas debe ser mayor de 0' :
+                                parseInt(value) > 200 || parseInt(state.filtro.plazas1) > 200 ? 'El número de plazas debe ser menor de 200'
+                                : ''
             }
 
             return {

@@ -4,7 +4,9 @@ import { handleChange,
         getFlujoAccidenteBarrioFecha, getFlujoAccidenteBarrioHora,
         getFlujoTraficoDistritoFecha, getFlujoTraficoDistritoHora, 
         getFlujoTraficoEstacionFecha, getFlujoTraficoEstacionHora,
-        vaciarFiltro
+        vaciarFiltro,
+        getFlujoTraficoBarrioHora,
+        getFlujoTraficoBarrioFecha
  } from "../features/flujo/dataFlujoSlice"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
@@ -51,11 +53,18 @@ const FormFlujo = ({ entidad, tipo }) => {
             }
         } else if(tipo === 'trafico distrito'){
             if(filtro.fecha1 !== '' && filtro.fecha2 !== '') {
-                console.log('Fecha')
                 dispatch(getFlujoTraficoDistritoFecha({ filtro, entidad }))
                 info = 'fecha'
             } else {
                 dispatch(getFlujoTraficoDistritoHora({ filtro, entidad }))
+                info = 'hora'
+            }
+        } else if (tipo === 'trafico barrio') {
+            if (filtro.fecha1 !== '' && filtro.fecha2 !== '') {
+                dispatch(getFlujoTraficoBarrioFecha({ filtro, entidad }))
+                info = 'fecha'
+            } else {
+                dispatch(getFlujoTraficoBarrioHora({ filtro, entidad }))
                 info = 'hora'
             }
         } else if(tipo === 'accidente distrito') {

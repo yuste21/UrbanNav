@@ -11,5 +11,6 @@ export const URIsTrafico = {
     chartHoraEstacion: `${base}/chart/hora/estacion`,
     chartFechaDistrito: `${base}/chart/fecha/distrito`,
     chartHoraDistrito: `${base}/chart/hora/distrito`,
-
+    chartFechaBarrio: `${base}/chart/fecha/barrio`,
+    chartHoraBarrio: `${base}/chart/hora/barrio`
 }

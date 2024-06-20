@@ -75,7 +75,11 @@ const renderActiveShape = (props) => {
   );
 };
 
-const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGrafica }) => {
+const PieChartAccidentes = ({ datosAgrupadosPie, 
+                              agrupacionPie, 
+                              obtenerDatosGrafica,
+                              zonaSeleccionada
+                            }) => {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const onPieEnter = (_, index) => {
@@ -84,7 +88,7 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
 
   return (
     <>
-        <p>Estadísticas de los accidentes</p>
+        <p>Estadísticas de los accidentes | {agrupacionPie.split('.')[0].includes('tipo') ? `${agrupacionPie.split('.')[0].split('_')[0]} ${agrupacionPie.split('.')[0].split('_')[1]}` : agrupacionPie.split('.')[0] === 'lesividade' ? 'lesión' : agrupacionPie.split('.')[0] }</p>
         <ResponsiveContainer width='100%' height={400}>
           <PieChart width={450} height={400}>
             <Pie
@@ -107,7 +111,7 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
                    value={'tipo_accidente.tipo_accidente'}
                    checked={agrupacionPie === 'tipo_accidente.tipo_accidente'}
                    name="grafica"
-                   onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie')}
+                   onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie', zonaSeleccionada)}
             />
             Accidente
         </label>
@@ -117,7 +121,7 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
                    value={'tipo_vehiculo.tipo_vehiculo'}
                    checked={agrupacionPie === 'tipo_vehiculo.tipo_vehiculo'}
                    name="grafica"
-                   onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie')}
+                   onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie', zonaSeleccionada)}
             />
             Vehículo
         </label>
@@ -127,7 +131,7 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
                   value={'clima.clima'} 
                   checked={agrupacionPie === 'clima.clima'} 
                   name='grafica' 
-                  onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie')} 
+                  onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie', zonaSeleccionada)} 
           />
           Clima
         </label>
@@ -137,7 +141,7 @@ const PieChartAccidentes = ({ datosAgrupadosPie, agrupacionPie, obtenerDatosGraf
                    value={'lesividade.tipo_lesion'}
                    checked={agrupacionPie === 'lesividad.lesividad'}
                    name="grafica"
-                   onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie')}
+                   onChange={(e) => obtenerDatosGrafica(e.target.value, 'Pie', zonaSeleccionada)}
             /> 
             Lesión
         </label>

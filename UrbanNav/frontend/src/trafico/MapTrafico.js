@@ -24,6 +24,8 @@ const MapTrafico = ({ activatedOverlay,
     const media = useSelector(state => state.trafico.dataTrafico.media)    
     const fechaMin = useSelector(state => state.trafico.dataTrafico.fechaMin)
     const fechaMax = useSelector(state => state.trafico.dataTrafico.fechaMax)
+    const fechaInicioMin = useSelector(state => state.trafico.dataTrafico.fechaInicioMin)
+    const fechaInicioMax = useSelector(state => state.trafico.dataTrafico.fechaInicioMax)
 
     const filtro = useSelector(state => state.trafico.filtro)
     const [showForm, setShowForm] = useState(false)
@@ -43,6 +45,13 @@ const MapTrafico = ({ activatedOverlay,
             setActivatedOverlay('Distritos')
         }
     }, [distritos])
+
+    useEffect(() => {
+        console.log(JSON.stringify(selectedBar))
+        if (selectedBar !== null && map) {
+            map.setView(selectedBar.centro, map.getZoom());
+        }
+    }, [selectedBar, map]);
 
     const handleOverlayChange = (selectedOverlay) => {
         var aux = activatedOverlay.split(' ')
@@ -194,7 +203,7 @@ const MapTrafico = ({ activatedOverlay,
     const popoverFechas = (
         <Popover id='popoverFechas'>
             <Popover.Body className='popover-body'>
-                <p>Desde {fechaMin} hasta {fechaMax}</p>
+                <p>Desde {fechaInicioMin} hasta {fechaInicioMax}</p>
             </Popover.Body>
         </Popover>
     )
@@ -202,7 +211,7 @@ const MapTrafico = ({ activatedOverlay,
     const popoverDatosDisponibles = (
         <Popover id='popoverDatosDisponibles'>
             <Popover.Body className='popover-body'>
-                <p>Desde {} hasta {}</p>
+                <p>Desde {fechaMin} hasta {fechaMax}</p>
             </Popover.Body>
         </Popover>
     )
@@ -273,10 +282,19 @@ const MapTrafico = ({ activatedOverlay,
                                     trigger='click'
                                     overlay={popoverFechas}
                                 >
-                                    <button className='btn'>Fecha de los datos</button>
+                                    <button className='btn'>Fecha de los datos actuales</button>
                                 </OverlayTrigger>
                             </div>
                         }
+
+                        <div className='row'>
+                            <OverlayTrigger placement='bottom'
+                                            trigger='click'
+                                            overlay={popoverDatosDisponibles}
+                            >
+                                <button className='btn'>Fechas disponibles en la base de datos</button>
+                            </OverlayTrigger>
+                        </div>
                     </div>
                     <hr></hr>
                     <div className='row'>
@@ -312,6 +330,7 @@ const MapTrafico = ({ activatedOverlay,
                                           style={{ height: '400px', width: '100%', borderRadius: '10px' }}
                                           className='shadow'
                                           ref={setMap}
+                                          whenCreated={setMap}
                             >
                                 <TileLayer
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -352,14 +371,22 @@ const MapTrafico = ({ activatedOverlay,
                                                         <p style={{ fontWeight: 'bold' }}>
                                                             Nombre: {estacion.nombre} <br/>
                                                             Estacion: {estacion.estacion} <br/>
+                                                            {estacion.sentido.includes('+') ? estacion.muestras/2 : estacion.muestras} días se han tenido en cuenta para esta medición <br/>
+                                                            {estacion.sentido.includes('+') &&
+                                                                <>
+                                                                    {estacion.muestras} muestras si tenemos en cuenta ambas estaciones: {estacion.sentido.split('+')[0]} y {estacion.sentido.split('+')[1]} <br/>
+                                                                </>
+                                                            }
                                                             {estacionOtra && <hr/>}
                                                             Sentido: {estacion.sentido} <br/>
-                                                            Trafico diario: {estacion.media} 
+                                                            Trafico diario medio: {estacion.media}  <br/>
+                                                            Trafico total registrado: {estacion.total} <br/>
                                                             {estacionOtra &&(
                                                                 <>
                                                                     <hr/>
                                                                     Sentido: {estacionOtra.sentido} <br/>
-                                                                    Trafico diario: {estacionOtra.media}
+                                                                    Trafico diario medio: {estacionOtra.media} <br/>
+                                                                    Trafico total registrado: {estacionOtra.total} 
                                                                 </>
                                                             )}
                                                         </p>
@@ -439,7 +466,7 @@ const MapTrafico = ({ activatedOverlay,
                                                 </button>
                                                 <Modal isOpen={isOpenModal} 
                                                        closeModal={closeModal} 
-                                                       info={{data: 'Barrio', aforo: barrio, tipo: 'barrio', idx: barrio.id}}
+                                                       info={{data: 'Barrio', entidad: barrio, tipo: 'trafico barrio', idx: barrio.id}}
                                                 >
                                                     <p style={{ fontWeight: 'bold' }}>
                                                         Nombre: {barrio.nombre} <br/>

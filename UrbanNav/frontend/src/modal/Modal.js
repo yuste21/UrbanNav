@@ -1,13 +1,8 @@
-import { useEffect } from "react";
-import { Modal, Button } from "react-bootstrap"
+import { Modal } from "react-bootstrap"
 import FormFlujo from "../charts/FormFlujo"
 
 const ModalWindow = ({children, isOpen, closeModal, info}) => {
     const { data, entidad, tipo, idx } = info;
-    
-    useEffect(() => {
-        console.log('idx = ' + idx)
-    }, [idx])
 
     return(
         <Modal show={isOpen[idx] === true} 

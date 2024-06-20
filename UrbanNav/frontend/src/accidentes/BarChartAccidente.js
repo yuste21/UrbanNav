@@ -1,9 +1,15 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer } from 'recharts';
+import { useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer, Brush } from 'recharts';
 
-const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) => {
+const BarChartAccidente = ({ datosAgrupados, 
+                             agrupacion, 
+                             obtenerDatosGrafica,
+                             zonaSeleccionada
+                            }) => {
+
     return(
         <>  
-            <p>Estadísticas de los implicados</p>
+            <p>Estadísticas de los implicados | {agrupacion === 'sexo.sexo' ? 'sexo' : agrupacion}</p>
             {datosAgrupados.length > 0 && 
                 <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={datosAgrupados}>
@@ -11,6 +17,7 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                         <XAxis dataKey={agrupacion}/>
                         <YAxis />
                         <Tooltip />
+                        {agrupacion === 'edad' && <Brush dataKey='categoria' height={30} stroke="#8884d8" /> }
                         <Bar dataKey='cantidad' fill='#8884d8' > 
                             <LabelList dataKey="categoria" position="bottom" />
                         </Bar>
@@ -23,7 +30,7 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                     value={'sexo.sexo'} 
                     checked={agrupacion === 'sexo.sexo'} 
                     name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')}
+                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar', zonaSeleccionada)}
             />
             Sexo
             </label>
@@ -33,7 +40,7 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                     value={'edad'} 
                     checked={agrupacion === 'edad'} 
                     name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} 
+                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar', zonaSeleccionada)} 
             />
             Edad
             </label>
@@ -43,7 +50,7 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                     value={'alcohol'} 
                     checked={agrupacion === 'alcohol'} 
                     name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} 
+                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar', zonaSeleccionada)} 
             />
             
             Alcohol
@@ -54,7 +61,7 @@ const BarChartAccidente = ({ datosAgrupados, agrupacion, obtenerDatosGrafica }) 
                     value={'drogas'} 
                     checked={agrupacion === 'drogas'} 
                     name='grafica' 
-                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar')} 
+                    onChange={(e) => obtenerDatosGrafica(e.target.value, 'Bar', zonaSeleccionada)} 
             />
             
             Drogas

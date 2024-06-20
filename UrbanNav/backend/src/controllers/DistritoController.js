@@ -182,6 +182,20 @@ export const getTraficoInicio = async(req, res) => {
         const startDate = new Date('2023-12-01')
         const endDate = new Date('2023-12-31')
 
+        // Encuentra la fecha mínima dentro del rango
+        const traficoMin = await TraficoModel.findOne({
+            order: [['fecha', 'ASC']],
+            attributes: ['fecha'],
+            limit: 1
+        });
+
+        // Encuentra la fecha máxima dentro del rango
+        const traficoMax = await TraficoModel.findOne({
+            order: [['fecha', 'DESC']],
+            attributes: ['fecha'],
+            limit: 1
+        });
+
         const trafico = await TraficoModel.findAll({
             where: {
                 fecha: {
@@ -195,7 +209,7 @@ export const getTraficoInicio = async(req, res) => {
 
         const { distritos, barrios, estaciones_trafico, media_total } = await traficoAux(traficoId, 'false', null, null)
 
-        res.json({ distritos, barrios, estaciones_trafico, media_total, fechaMin: '2023-12-01', fechaMax: '2023-12-31' })
+        res.json({ distritos, barrios, estaciones_trafico, media_total, fechaMin: traficoMin.fecha, fechaMax: traficoMax.fecha, fechaInicioMin: '2023-12-01', fechaInicioMax: '2023-12-31' })
     } catch (error) {
         res.status(500).json({ message: 'Error en la consulta getTraficoInicio de distrito' })
         console.log('Error en la consulta getTraficoInicio de distrito: ', error)
@@ -212,7 +226,7 @@ export const getEstacionamientosInicio = async(req, res) => {
          * - Obtengo los primeros barrios que tienen 10 de estos accidentes como minimo 
          * - Obtengo los distritos a los que pertenecen los barrios
          */
-        const distritos = await DistritoModel.findAll({
+        const distritosBD = await DistritoModel.findAll({
             include: [{
               model: BarrioModel,
               as: 'barrios',
@@ -234,14 +248,27 @@ export const getEstacionamientosInicio = async(req, res) => {
             }]
           });
 
+          var distritos = []
           var estacionamientos = []
           var barrios = []
-          distritos.forEach((distrito) => {
+          distritosBD.forEach((distrito) => {
+            var n_estacionamientos = 0
             barrios = barrios.concat(distrito.barrios)
             distrito.barrios.forEach((barrio) => {
                 estacionamientos = estacionamientos.concat(barrio.estacionamientos)
+                n_estacionamientos += barrio.estacionamientos.length
+            })
+            
+            distritos.push({
+                id: distrito.id,
+                codigo: distrito.codigo,
+                nombre: distrito.nombre,
+                delimitaciones: distrito.delimitaciones,
+                barrios: distrito.barrios,
+                n_estacionamientos
             })
           })
+
         res.json({ distritos, barrios, estacionamientos })
     } catch (error) {
         res.status(500).json({ message: 'Error en la consulta getEstacionamientosInicio de distrito' })

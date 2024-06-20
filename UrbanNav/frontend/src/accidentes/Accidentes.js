@@ -18,7 +18,6 @@ function Accidentes () {
 
     //FILTRO + FORM
     const loading = useSelector(state => state.accidentes.loading)
-    const filtro = useSelector(state => state.accidentes.filtro)
 
     //ZONAS
     const distritos = useSelector(state => state.accidentes.dataAccidentes.distritos)
@@ -30,7 +29,6 @@ function Accidentes () {
 
     useEffect(() => {
         if (accidentes.length === 0) {
-            console.log('Carga inicial')
             cargaInicial()
         }
     }, [])
@@ -38,6 +36,8 @@ function Accidentes () {
     //FILTRO
     const handleFilter = async(filtro) => {
         if(filtro !== initialFilter) {
+            setZonaClickeada(false)
+            setZonaSeleccionada(null)
             var radio = filtro.radio.distancia / 1000
             dispatch(getDataAccidentesFiltro({ filtro, radio }))
         }
@@ -57,23 +57,25 @@ function Accidentes () {
         setColCharts(showCharts ? "col-xl-5 col-lg-12" : "col-lg-12 col-xl-1")
     }, [showCharts])
 
+    const [zonaClickeada, setZonaClickeada] = useState(false)
     const [zonaSeleccionada, setZonaSeleccionada] = useState(null)
 
     //Con el metodo get de lodash puedo acceder a atributos como accidente.sexo.sexo
-    const obtenerDatosGrafica = (agrupacion, chart) => {
+    const obtenerDatosGrafica = (agrupacion, chart, zona) => {
         var datosAgrupados
         
-        if(zonaSeleccionada === null || chart === 'DeseleccionadoBar' || chart === 'DeseleccionadoPie') {
+        if(zona === null || !zona) {
             datosAgrupados = accidentes.reduce((acc, curr) => {
                 const categoria = get(curr, agrupacion)
                 acc[categoria] = acc[categoria] ? acc[categoria] + 1 : 1
                 return acc
             }, {})
         } else {
-            var zona = distritos.find(el => el.nombre === zonaSeleccionada.nombre)
+            var zonaEncontrada = distritos.find(el => el.nombre === zona.nombre)
             var accidentesAsociados
-            if(!zona) {
-                zona = barrios.find(el => el.nombre === zonaSeleccionada.nombre)
+
+            if(!zonaEncontrada) {
+                zonaEncontrada = barrios.find(el => el.nombre === zona.nombre)
                 accidentesAsociados = accidentes.filter(el => el.barrioId === zona.id)
             } else {
                 accidentesAsociados = accidentes.filter(el => barrios.some(barrio => barrio.distritoId === zona.id && barrio.id === el.barrioId));
@@ -99,6 +101,20 @@ function Accidentes () {
         }
     }
 
+    useEffect(() => {
+        if (accidentes.length === 0) {
+            setDatosAgrupados([])
+            setDatosAgrupadosPie([])
+            setShowCharts(false)
+        }
+    }, [accidentes])
+
+    useEffect(() => {
+        if ((zonaSeleccionada && zonaSeleccionada.n_accidentes === 0 && zonaSeleccionada !== null || 
+            (zonaSeleccionada !== null && zonaSeleccionada.barrios && zonaSeleccionada.barrios.length === 0)) && zonaClickeada) setShowCharts(false)
+
+    }, [zonaSeleccionada])
+
     return(
         <div>
             <NavbarPage></NavbarPage>
@@ -114,7 +130,7 @@ function Accidentes () {
                                     <>
                                         <button className="btn mt-3"
                                                 onClick={() => {
-                                                    obtenerDatosGrafica('clima.clima', 'Bar')
+                                                    obtenerDatosGrafica('edad', 'Bar')
                                                     obtenerDatosGrafica('tipo_accidente.tipo_accidente', 'Pie')
                                                     setShowCharts(true)
                                                 }}
@@ -138,11 +154,13 @@ function Accidentes () {
                                                 <BarChartAccidente datosAgrupados={datosAgrupados} 
                                                                    agrupacion={agrupacion} 
                                                                    obtenerDatosGrafica={obtenerDatosGrafica} 
+                                                                   zonaSeleccionada={zonaSeleccionada}
                                                 />
                                                 <hr></hr>
                                                 <PieChartAccidentes datosAgrupadosPie={datosAgrupadosPie}
                                                                     agrupacionPie={agrupacionPie}
                                                                     obtenerDatosGrafica={obtenerDatosGrafica}
+                                                                    zonaSeleccionada={zonaSeleccionada}
                                                 />
                                             </div>
                                         </div>
@@ -156,6 +174,10 @@ function Accidentes () {
                                                        obtenerDatosGrafica={obtenerDatosGrafica}
                                                        zonaSeleccionada={zonaSeleccionada}
                                                        setZonaSeleccionada={setZonaSeleccionada}
+                                                       agrupacion={agrupacion}
+                                                       agrupacionPie={agrupacionPie}
+                                                       zonaClickeada={zonaClickeada}
+                                                       setZonaClickeada={setZonaClickeada}
                                         />
                                     </div>
                                 </div>

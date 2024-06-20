@@ -142,7 +142,7 @@ const FormEstacionamientos = ({ handleFilter }) => {
                             <Form.Group as={Col} xs={12} sm={6} className='d-flex flex-column align-items-start mb-2'>
                                     <Form.Control type='number'
                                                 min="0"
-                                                max="60"
+                                                max="200"
                                                 style={{ width: "100px" }}
                                                 id="plazas1"
                                                 name="plazas1"
@@ -155,7 +155,7 @@ const FormEstacionamientos = ({ handleFilter }) => {
                             <Form.Group as={Col} xs={12} sm={6} className='d-flex flex-column align-items-start'>
                                     <Form.Control type='number'
                                                 min="0"
-                                                max="60"
+                                                max="200"
                                                 style={{ width: "100px" }}
                                                 id="plazas2"
                                                 name="plazas2"

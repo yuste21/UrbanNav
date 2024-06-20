@@ -66,6 +66,21 @@ export const getFlujoTraficoDistritoHora = createAsyncThunk('flujo/trafico/distr
         .then((response) => response.data)
 })
 
+export const getFlujoTraficoBarrioFecha = createAsyncThunk('flujo/trafico/barrio/fecha', async (req, res) => {
+    const { filtro, entidad } = req
+    console.log('Llega a getFlujo slice (antes consulta) ' + entidad.id)
+    return axios
+        .get(`${URIsTrafico.chartFechaBarrio}?fecha1=${filtro.fecha1}&fecha2=${filtro.fecha2}&id=${entidad.id}`)
+        .then((response) => response.data)
+})
+
+export const getFlujoTraficoBarrioHora = createAsyncThunk('flujo/trafico/barrio/hora', async (req, res) => {
+    const { filtro, entidad } = req
+    return axios
+        .get(`${URIsTrafico.chartHoraBarrio}?hora1=${filtro.hora1}&hora2=${filtro.hora2}&id=${entidad.id}`)
+        .then((response) => response.data)
+})
+
 //Consultas accidentes
 export const getFlujoAccidenteDistritoFecha = createAsyncThunk('flujo/accidente/distrito/fecha', async (req, res) => {
     const { filtro, entidad } = req
@@ -303,6 +318,47 @@ export const dataFlujoSlice = createSlice({
             })
             .addCase(getFlujoTraficoEstacionHora.rejected, (state, action) => {
                 console.error("Error al obtener flujo trafico estacion hora: ", action.error)
+                state.loading = false
+            })
+
+            //---
+
+            .addCase(getFlujoTraficoBarrioFecha.pending, (state, action) => {
+                state.loading = true
+            })
+            .addCase(getFlujoTraficoBarrioFecha.fulfilled, (state, action) => {
+                console.log('Llega a getFlujo slice (despues consulta)')
+                state.dataFlujo.centro = action.payload.centro
+                state.dataFlujo.zonaPrincipal = action.payload.trafico
+                state.dataFlujo.delimitaciones = action.payload.delimitaciones
+                state.dataFlujo.codigo = action.payload.codigo
+                state.dataFlujo.nombre = action.payload.nombre
+                state.dataFlujo.subzonas = action.payload.aforos
+
+                state.loading = false
+            })
+            .addCase(getFlujoTraficoBarrioFecha.rejected, (state, action) => {
+                console.error("Error al obtener flujo trafico barrio fecha: ", action.error)
+                state.loading = false
+            })
+
+            //---
+
+            .addCase(getFlujoTraficoBarrioHora.pending, (state, action) => {
+                state.loading = true
+            })
+            .addCase(getFlujoTraficoBarrioHora.fulfilled, (state, action) => {
+                state.dataFlujo.centro = action.payload.centro
+                state.dataFlujo.zonaPrincipal = action.payload.trafico
+                state.dataFlujo.delimitaciones = action.payload.delimitaciones
+                state.dataFlujo.codigo = action.payload.codigo
+                state.dataFlujo.nombre = action.payload.nombre
+                state.dataFlujo.subzonas = action.payload.aforos
+
+                state.loading = false
+            })
+            .addCase(getFlujoTraficoBarrioHora.rejected, (state, action) => {
+                console.error("Error al obtener flujo trafico barrio hora: ", action.error)
                 state.loading = false
             })
     }
