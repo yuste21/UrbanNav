@@ -1,0 +1,50 @@
+---CREACION BACKEND
+- Crear carpeta backend. Todo lo siguiente es dentro de backend
+- Crear carpeta src
+- npm init -y | en src
+- npm i express | en src
+- npm i nodemon -D --> Con esto hacemos que la app se pueda ejecutar constantemente aunque hagamos cambios
+- npm i morgan --> Morgan nos permite ver en consola las consultas que le llegan al backend
+- añadir: "type": "module", | donde pone "main": "index.js" --> en package.json | Esto es para poder hacer import x from "x" en lugar de required
+- crear carpetas a la altura de src: controllers, routes, models
+- crear: db.js, index.js, app.js a la altura de src
+- "dev": "nodemon src/index.js" | escribir esto dentro de "scripts": { | dentro de package.json --> "dev" es lo que escribimos para ejecutar el servidor | npm run dev
+----
+Configuracion backend
+- importar en app.js -> express y morgan | const app = express() | app.use(morgan('dev)) | 
+- en index.js -> importar app | configurar el puerto -> listen(puerto) 
+- npm i cors -> meter el cors en el app del backend -> import cors from 'cors'; | app.use(cors()) // Esto es para hacer peticiones al backend desde el frontend
+- npm i multer cloudinary streamifier
+------------------------------------------------------------------------------------------------------------------------------
+CONEXION CON LA BD
+- npm i mongoose
+- await mongoose.connect('mongodb+srv://<User Name>:<password>@<URI cluster>/<nombre_bd>')
+Direccion de conexion a la bd: 
+1. Ir a atlas
+2. Click en "Database" (en la parta izquierda, debajo de DEPLOYMENT)
+3. Click en "Connect" (en el cluster que me quiera connectar)
+4. Click en "Compass" 
+5. "Copy the connection string, then open MongoDB Compass"
+------------------------------------------------------------------------------------------------------------------------------
+---Creacion frontend
+- npx create-react-app frontend <-- en este caso frontend es el nombre de la carpeta
+- Si no encuentra react-router-dom instalar -> npm install react-router-dom
+- npm i react-leaflet
+------------------------------------------------------------------------------------------------------------------------------
+---Login google
+- poner: <script src="https://accounts.google.com/gsi/client" async defer></script> | en index.html
+- npm i jwt-decode
+- import jwt_decode from "jwt-decode" | en el componente Login
+------------------------------------------------------------------------------------------------------------------------------
+POSTMAN CONSULTAS:
+New collection (donde el +)
+- add request
+- save
+------------------------------------------------------------------------------------------------------------------------------
+INSTALACION:
+- crear .txt en carpeta del proyecto
+--> escribir esto en el txt:
+- call npm ci 
+- npm run dev
+- guardar como .bat
+
